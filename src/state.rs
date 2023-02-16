@@ -56,7 +56,6 @@ impl NetWorthStore {
     pub fn load(store: &dyn Storage, account: &Addr) -> u128 {
         let balances = NETWORTHS.add_suffix(account.as_str().as_bytes());
         balances.load(store).unwrap_or_default()
-        // balances.may_load(store)
     }
 
     pub fn save(store: &mut dyn Storage, account: &Addr, amount: u128) -> StdResult<()> {

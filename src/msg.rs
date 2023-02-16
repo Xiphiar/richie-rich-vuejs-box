@@ -20,23 +20,28 @@ pub enum QueryMsg {
         addr: Addr,
         key: String,
     },
-    // AmIRichest {
-
-    // },
+    AmIRichest {
+        addr: Addr,
+        key: String,
+    },
     WithPermit {
-        permit: Permit,
+        permit: Permit<RichieRichPermissions>,
         query: QueryWithPermit,
     },
 }
 
 impl QueryMsg {
-    pub fn get_validation_params(&self, api: &dyn Api) -> StdResult<(Vec<Addr>, String)> {
+    pub fn get_validation_params(&self, api: &dyn Api) -> StdResult<(Addr, String)> {
         match self {
             Self::AllInfo { addr, key } => {
                 let address = api.addr_validate(addr.as_str())?;
-                Ok((vec![address], key.clone()))
+                Ok((address, key.clone()))
             }
-            _ => panic!("This query type does not require authentication"),
+            Self::AmIRichest { addr, key } => {
+                let address = api.addr_validate(addr.as_str())?;
+                Ok((address, key.clone()))
+            },
+            Self::WithPermit { .. } => panic!("This query type does not require authentication"),
         }
     }
 }
@@ -45,7 +50,7 @@ impl QueryMsg {
 #[serde(rename_all = "snake_case")]
 pub enum QueryWithPermit {
     AllInfo {  },
-    // AmIRichest {  },
+    AmIRichest {  },
 }
 
 /// We define a custom struct for each query response
@@ -58,7 +63,11 @@ pub enum QueryAnswer {
     AmIRichest {
         richest: bool,
     },
-    ViewingKeyError {
-        msg: String,
-    },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum RichieRichPermissions {
+    AllInfo,
+    AmIRichest,
 }
