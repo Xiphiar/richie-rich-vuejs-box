@@ -1,23 +1,66 @@
+use cosmwasm_std::{Addr, Storage, StdResult};
+use cosmwasm_storage::{
+    ReadonlySingleton, singleton, Singleton,
+    singleton_read,
+};
+use secret_toolkit::storage::{Item};
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Addr, Storage};
-use cosmwasm_storage::{
-    singleton, singleton_read, ReadonlySingleton, Singleton,
-};
+const STATE_KEY: &[u8] = b"state";
+pub const PREFIX_BALANCES: &[u8] = b"balances";
 
-pub static CONFIG_KEY: &[u8] = b"config";
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-pub struct State {
-    pub count: i32,
-    pub owner: Addr,
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+pub struct Outcome {
+    pub richest: Millionaire,
 }
 
-pub fn config(storage: &mut dyn Storage) -> Singleton<State> {
-    singleton(storage, CONFIG_KEY)
+impl Outcome {
+    pub fn init() -> Self {
+        Self {
+            richest: Millionaire { 
+                addr: Addr::unchecked(""), 
+                networth: 0, 
+            },
+        }
+    }
+
+    pub fn update_richest(&mut self, addr: Addr, networth: u128) {
+        self.richest = Millionaire {
+            addr,
+            networth,
+        }
+    } 
 }
 
-pub fn config_read(storage: &dyn Storage) -> ReadonlySingleton<State> {
-    singleton_read(storage, CONFIG_KEY)
+pub fn state(storage: &mut dyn Storage) -> Singleton<Outcome> {
+    singleton(storage, STATE_KEY)
+}
+
+pub fn state_read(storage: &dyn Storage) -> ReadonlySingleton<Outcome> {
+    singleton_read(storage, STATE_KEY)
+}   
+
+
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+pub struct Millionaire {
+    pub addr: Addr,
+    pub networth: u128,
+}
+
+pub static NETWORTHS: Item<u128> = Item::new(PREFIX_BALANCES);
+pub struct NetWorthStore {}
+impl NetWorthStore {
+    pub fn load(store: &dyn Storage, account: &Addr) -> u128 {
+        let balances = NETWORTHS.add_suffix(account.as_str().as_bytes());
+        balances.load(store).unwrap_or_default()
+        // balances.may_load(store)
+    }
+
+    pub fn save(store: &mut dyn Storage, account: &Addr, amount: u128) -> StdResult<()> {
+        let balances = NETWORTHS.add_suffix(account.as_str().as_bytes());
+        balances.save(store, &amount)
+    }
 }

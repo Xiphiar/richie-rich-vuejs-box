@@ -34,6 +34,11 @@ cosmwasm-storage = { package = "secret-cosmwasm-storage", version = "1.0.0" }
 schemars = "0.8.1"
 serde = { version = "1.0.114", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
+secret-toolkit = { version = "0.7.0",  features = [
+  "permit",
+  "viewing-key",
+] }
+
 
 # [dev-dependencies]
 cosmwasm-schema = "1.0.0"
