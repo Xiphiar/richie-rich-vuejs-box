@@ -1,6 +1,6 @@
-# Secret Counter Box
+# Richie Rich Box
 
-This is the frontend for the Secret Counter contract contained in this box.
+This is the frontend for the Richie Rich contract contained in this box.
 
 ## Install Dependencies
 

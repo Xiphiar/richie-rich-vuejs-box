@@ -119,7 +119,7 @@ function handleScroll() {
 <template>
   <div class="grid items-center grid-cols-2">
     <div class="flex pb-2 self-center">
-      <img src="../assets/title_star.svg" alt="Simple secret counter app">
+      <img src="../assets/title_star.svg" alt="Richie Rich app">
       <h2 class="ml-2 text-2xl font-medium tracking-widest text-[#200E32] dark:text-white"></h2>
     </div>
 

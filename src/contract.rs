@@ -112,7 +112,7 @@ fn permit_queries(deps: Deps, env: Env, permit: Permit<RichieRichPermissions>, q
 pub fn try_submit_net_worth(
     deps: DepsMut,
     info: MessageInfo,
-    networth: u128,
+    networth: u64,
 ) -> Result<Response, ContractError> {
     // checks that account has not already submitted -- can only submit once
     match NetWorthStore::may_load(deps.storage, &info.sender) {
@@ -206,7 +206,7 @@ mod tests {
 
     fn submit_networth_helper(
         deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier>,
-        submissions: Vec<(&str, u128)>
+        submissions: Vec<(&str, u64)>
     ) -> Vec<Response>  {
         let mut res_vec = vec![];
         for (sender, networth) in submissions {
@@ -218,7 +218,7 @@ mod tests {
         res_vec
     }
 
-    fn assert_info(deps: Deps, acc: &str, exp_richest: bool, exp_networth: u128) {
+    fn assert_info(deps: Deps, acc: &str, exp_richest: bool, exp_networth: u64) {
         let res = query_all_info(deps, Addr::unchecked(acc)).unwrap();
 
         match res {
@@ -229,7 +229,7 @@ mod tests {
         }
     }
 
-    fn assert_info_vec(deps: Deps, acc_richest_networth: Vec<(&str, bool, u128)>) {
+    fn assert_info_vec(deps: Deps, acc_richest_networth: Vec<(&str, bool, u64)>) {
         for (acc, exp_richest, exp_networth) in acc_richest_networth {
             assert_info(deps, acc, exp_richest, exp_networth);
         }
@@ -255,7 +255,7 @@ mod tests {
         assert_eq!(0, res.unwrap().messages.len());
 
         let state = state_read(deps.as_ref().storage).load().unwrap();
-        assert_eq!(state, Outcome { richest: Millionaire { addr: Addr::unchecked(""), networth: 0u128 } });
+        assert_eq!(state, Outcome { richest: Millionaire { addr: Addr::unchecked(""), networth: 0u64 } });
     }
 
     #[test]

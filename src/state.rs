@@ -28,7 +28,7 @@ impl Outcome {
         }
     }
 
-    pub fn update_richest(&mut self, addr: Addr, networth: u128) {
+    pub fn update_richest(&mut self, addr: Addr, networth: u64) {
         self.richest = Millionaire {
             addr,
             networth,
@@ -49,19 +49,19 @@ pub fn state_read(storage: &dyn Storage) -> ReadonlySingleton<Outcome> {
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct Millionaire {
     pub addr: Addr,
-    pub networth: u128,
+    pub networth: u64,
 }
 
-pub static NETWORTHS: Item<u128> = Item::new(PREFIX_BALANCES);
+pub static NETWORTHS: Item<u64> = Item::new(PREFIX_BALANCES);
 pub struct NetWorthStore {}
 impl NetWorthStore {
-    pub fn may_load(store: &dyn Storage, account: &Addr) -> Option<u128> {
+    pub fn may_load(store: &dyn Storage, account: &Addr) -> Option<u64> {
         let balances = NETWORTHS.add_suffix(account.as_str().as_bytes());
         // balances.load(store).unwrap_or_default()
         balances.may_load(store).unwrap()
     }
 
-    pub fn save(store: &mut dyn Storage, account: &Addr, amount: u128) -> StdResult<()> {
+    pub fn save(store: &mut dyn Storage, account: &Addr, amount: u64) -> StdResult<()> {
         let balances = NETWORTHS.add_suffix(account.as_str().as_bytes());
         balances.save(store, &amount)
     }

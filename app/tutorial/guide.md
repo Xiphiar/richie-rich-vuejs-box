@@ -1,4 +1,4 @@
-# Secret Counter Box Tutorial
+# Richie Rich Box Tutorial
 
 ## Introduction
 This box is an introductory or beginner-level quickstart based on the [counter template contract](https://github.com/secretuniversity/secret-template-cw1). If you would like to work with this Secret Box your local environment, follow the "Getting Started" steps [here](https://github.com/secretuniversity/secret-counter-vuejs-box/blob/main/README.md).

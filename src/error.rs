@@ -8,5 +8,5 @@ pub enum ContractError {
     Std(#[from] StdError),
 
     #[error("You have already submitted your networth: {networth:}")]
-    AlreadySubmittedNetworth { networth: u128 },
+    AlreadySubmittedNetworth { networth: u64 },
 }

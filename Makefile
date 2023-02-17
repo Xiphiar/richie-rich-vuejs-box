@@ -62,6 +62,11 @@ localsecret: # CTRL+C to stop
 deploy:
 	docker exec localsecret secretcli tx compute store -y --from a --gas 1000000 /root/code/contract.wasm.gz
 
+# Uploads and instantiates Secret Box, by running create_secret_box.sh
+.PHONY: deploybox
+deploybox:
+	./scripts/create_secret_box.sh
+
 .PHONY: clean
 clean:
 	cargo clean

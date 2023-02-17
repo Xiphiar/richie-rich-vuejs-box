@@ -1,24 +1,212 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { Wallet, SecretNetworkClient, Permission } from "secretjs"
+import { AminoWallet } from 'secretjs/dist/wallet_amino';
+
+// Secret.js Client
+let secretjs: SecretNetworkClient
+
+const wallet = new Wallet(
+  "grant rice replace explain federal release fix clever romance raise often wild taxi quarter soccer fiber love must tape steak together observe swap guitar"
+)
+
+// Get environment variables from .env
+const localSecretUrl: string = import.meta.env.VITE_LOCALSECRET_GRPC
+const secretBoxCode: number = import.meta.env.VITE_SECRET_BOX_CODE
+const secretBoxHash: string = import.meta.env.VITE_SECRET_BOX_HASH
+const secretBoxAddress: string = import.meta.env.VITE_SECRET_BOX_ADDRESS
+
+console.log(`local gRPC = ${localSecretUrl}`)
+console.log(`code id = ${secretBoxCode}`)
+console.log(`contract hash = ${secretBoxHash}`)
+console.log(`contract address = ${secretBoxAddress}`)
 
 const count = ref(0)
 const showApp = ref(true)
 
 onMounted(async () => {
   window.addEventListener('scroll', handleScroll)
+
+  // To create a signer secret.js client, also pass in a wallet
+  console.log("Initializing Secret.js client ...")
+  secretjs = await SecretNetworkClient.create({
+    //grpcWebUrl: "http://localhost:9091",
+    grpcWebUrl: localSecretUrl,
+    chainId: "secretdev-1",
+    wallet: wallet,
+    walletAddress: wallet.address,
+  })
+
+  console.log(`Created client for wallet address: ${wallet.address}`)
+
+  // count.value = await queryCounter()
 })
 
-const queryCounter = () => {
-  return count.value
+
+// Smart contract interface -------------------------------
+
+const submitNetworth = async (
+  networth: string
+) => {
+  const tx = await secretjs.tx.compute.executeContract(
+  {
+    sender: wallet.address,
+    contractAddress: secretBoxAddress,
+    codeHash: secretBoxHash,
+    msg: {
+      submit_net_worth: { networth },
+    },
+  },
+  {
+    gasLimit: 1_000_000,
+  })
+
+  console.log("Submitted networth")
+  // count.value = await queryCounter()
 }
 
-const incrementCounter = () => {
-  count.value++
+const setViewingKey = async (
+  key: string,
+) => {
+  const tx = await secretjs.tx.compute.executeContract(
+  {
+    sender: wallet.address,
+    contractAddress: secretBoxAddress,
+    codeHash: secretBoxHash,
+    msg: {
+      set_viewing_key: { key },
+    },
+  },
+  {
+    gasLimit: 1_000_000,
+  })
+
+  console.log("Viewing key set")
+  // count.value = await queryCounter()
 }
 
-const resetCounter = () => {
-  count.value = 0
+const queryAllInfo = async (
+  addr: string,
+  key: string,
+) => {
+  const response = (await secretjs.query.compute.queryContract({
+    contractAddress: secretBoxAddress,
+    codeHash: secretBoxHash,
+    query: { all_info: {
+      addr,
+      key,
+    } },
+  })) as AllInfoResponse;
+
+  if ('err"' in response) {
+    throw new Error(
+      `Query failed with the following err: ${JSON.stringify(response)}`
+    )
+  }
+
+  return response
 }
+
+const queryAmIRichest = async (
+  addr: string,
+  key: string,
+) => { 
+  const response = (await secretjs.query.compute.queryContract({
+    contractAddress: secretBoxAddress,
+    codeHash: secretBoxHash,
+    query: { am_i_richest: {
+      addr,
+      key,
+    } },
+  })) as AmIRichestResponse;
+
+  if ('err"' in response) {
+    throw new Error(
+      `Query failed with the following err: ${JSON.stringify(response)}`
+    )
+  }
+
+  return response
+}
+
+async function queryAllInfoWithPermit(
+  account: Account,
+) {
+  const permit = await generatePermit(account, ["all_info"]);
+
+  const msg = { with_permit: {
+    permit,
+    query: { all_info: { }}
+  }};
+
+  const response = (await secretjs.query.compute.queryContract({
+    contractAddress: secretBoxAddress,
+    codeHash: secretBoxHash,
+    query: msg,
+  })) as AllInfoResponse;
+
+  return response;
+}
+
+async function queryAmIRichestWithPermit(
+  account: Account,
+) {
+  const permit = await generatePermit(account, ["am_i_richest"]);
+
+  const msg = { with_permit: {
+    permit,
+    query: { am_i_richest: { }}
+  }};
+
+  const response = (await secretjs.query.compute.queryContract({
+    contractAddress: secretBoxAddress,
+    codeHash: secretBoxHash,
+    query: msg,
+  })) as AmIRichestResponse;
+
+  return response;
+}
+
+
+// TS types and helper functions
+
+async function generatePermit(
+  account: Account,
+  permits: CustomPermission[],
+) {
+  const { secretjs } = account;
+  const permit = await secretjs.utils.accessControl.permit.sign(
+    account.address,
+    "secret-4",
+    "permitname",
+    [secretBoxAddress],
+    permits, // ["owner"],
+    false,
+  );
+  return permit;
+}
+
+type AllInfoResponse = { 
+    richest: boolean,
+    networth: number, 
+  }
+
+type AmIRichestResponse = { 
+  richest: boolean,
+}
+
+type CustomPermission = "all_info" | "am_i_richest" 
+
+type Account = {
+  address: string;
+  mnemonic: string;
+  walletAmino: AminoWallet;
+  walletProto: Wallet;
+  secretjs: SecretNetworkClient;
+};
+
+
+// --------------------------------------------------------
 
 const props = defineProps<{
   title: string
@@ -44,7 +232,7 @@ function handleScroll() {
 <template>
   <div class="grid items-center grid-cols-2">
     <div class="flex pb-2 self-center">
-      <img src="../assets/title_star.svg" alt="Simple secret counter app">
+      <img src="../assets/title_star.svg" alt="Richie Rich app">
       <h2 class="ml-2 text-2xl font-medium tracking-widest text-[#200E32] dark:text-white"></h2>
     </div>
 
@@ -58,11 +246,11 @@ function handleScroll() {
   <div v-if="showApp">
     <div class="grid grid-cols-3 w-full justify-items-center mt-12 mb-16">
       <div class="col-start-2 h-full font-bold text-[160px] leading-none"></div>
-      <button @click="incrementCounter" class="cols-start-3 w-max bg-box-yellow h-max self-center px-9 py-4 font-semibold rounded-md text-2xl ml-4"> + </button>
+      <button @click="submitNetworth" class="cols-start-3 w-max bg-box-yellow h-max self-center px-9 py-4 font-semibold rounded-md text-2xl ml-4"> Submit Networth </button>
     </div>
 
     <div class="grid w-full justify-items-center mb-16">
-      <button @click="resetCounter" class="font-semibold text-[#4E4B66] dark:text-white border-2 border-[#4E4B66] dark:border-white px-8 py-3 rounded-md">Reset Counter?</button>
+      <button @click="queryAllInfo" class="font-semibold text-[#4E4B66] dark:text-white border-2 border-[#4E4B66] dark:border-white px-8 py-3 rounded-md">Get Info</button>
     </div>
   </div>
 </template>

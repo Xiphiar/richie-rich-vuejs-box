@@ -9,7 +9,7 @@ pub struct InstantiateMsg {}
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    SubmitNetWorth { networth: u128 },
+    SubmitNetWorth { networth: u64 },
     SetViewingKey { key: String },
 }
 
@@ -58,7 +58,7 @@ pub enum QueryWithPermit {
 pub enum QueryAnswer {
     AllInfo {
         richest: bool,
-        networth: u128
+        networth: u64
     },
     AmIRichest {
         richest: bool,
