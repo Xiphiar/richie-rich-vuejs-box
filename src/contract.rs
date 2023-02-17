@@ -170,19 +170,25 @@ fn query_richest(
 
 #[cfg(test)]
 mod tests {
+    use std::any::Any;
+
     use super::*;
 
     use cosmwasm_std::testing::{
         mock_env, mock_info, mock_dependencies,
         MockStorage, MockApi, MockQuerier
     };
-    use cosmwasm_std::{coins, OwnedDeps};
+    use cosmwasm_std::{coins, OwnedDeps, from_binary};
 
-    fn init_helper() -> (StdResult<Response>, OwnedDeps<MockStorage, MockApi, MockQuerier>) {
+    fn init_helper() -> (
+        StdResult<Response>, 
+        OwnedDeps<MockStorage, MockApi, MockQuerier>,
+    ) {
         let mut deps = mock_dependencies();
         let msg = InstantiateMsg {};
         let info = mock_info("creator", &coins(0, "coins"));
         let res = instantiate(deps.as_mut(), mock_env(), info, msg);
+
         (res, deps)
     }
 
@@ -200,6 +206,27 @@ mod tests {
         res_vec
     }
 
+    // fn extract_generic_error_msg<T: Any>(error: StdResult<T>) -> String {
+    //     match error {
+    //         Ok(_) => panic!("An error was expected, but no error could be extracted"),
+    //         Err(err) => match err {
+    //             StdError::GenericErr { msg, .. } => msg,
+    //             _ => panic!("Unexpected result"),
+    //         },
+    //     }
+    // }
+
+    fn assert_gen_err<T: Any>(result: StdResult<T>, err_string: &str) -> bool {
+        match result {
+            Ok(_) => panic!("An error was expected, but no error could be extracted"),
+            Err(err) => match err {
+                StdError::GenericErr { msg, .. } => {
+                    msg.contains(err_string)
+                },
+                _ => panic!("Unexpected result"),
+            },
+        }
+    }
 
     #[test]
     fn test_init_sanity() {
@@ -219,10 +246,9 @@ mod tests {
     }
 
     #[test]
-    fn test_query_richest() {
+    fn test_richest_sanity() {
         let (_, mut deps) = init_helper();
-        let submissions = vec![("alice", 1), ("bob", 2)];
-        submit_networth_helper(&mut deps, submissions);
+        submit_networth_helper(&mut deps, vec![("alice", 1), ("bob", 2)]);
 
         let alice_query_res = query_all_info(deps.as_ref(), Addr::unchecked("alice")).unwrap();
         let bob_query_res = query_all_info(deps.as_ref(), Addr::unchecked("bob")).unwrap();
@@ -239,5 +265,63 @@ mod tests {
             },
             res => panic!("unexpected QueryAnswer type: {res:?}"),
         }
+    }
+
+    #[test]
+    fn test_vk_query() {
+        let (_, mut deps) = init_helper();
+        submit_networth_helper(&mut deps, vec![("alice", 1), ("bob", 2)]);
+
+        // no vk set yet ----------------------
+        // AllInfo
+        let q_msg_all = QueryMsg::AllInfo { addr: Addr::unchecked("alice"), key: "vka".to_string() };
+        let query_result = query(deps.as_ref(), mock_env(), q_msg_all.clone());
+        assert_gen_err(query_result, "Wrong viewing key for this address or viewing key not set");
+
+        // AmIRichest
+        let q_msg_richest = QueryMsg::AmIRichest { addr: Addr::unchecked("alice"), key: "vka".to_string() };
+        let query_result = query(deps.as_ref(), mock_env(), q_msg_richest.clone());
+        assert_gen_err(query_result, "Wrong viewing key for this address or viewing key not set");
+
+        // set vk ----------------------
+        let setvk_msg = ExecuteMsg::SetViewingKey { key: "vka".to_string() };
+        let info = mock_info("alice", &[]);
+        execute(deps.as_mut(), mock_env(), info, setvk_msg).unwrap();
+
+        // can view result with correct vk ----------------------
+        // AllInfo
+        let query_result = query(deps.as_ref(), mock_env(), q_msg_all);
+        assert!(query_result.is_ok());
+        let query_answer = from_binary::<QueryAnswer>(&query_result.unwrap()).unwrap();
+        assert_eq!(query_answer, QueryAnswer::AllInfo { richest: false, networth: 1 });
+
+        // AmIRichest
+        let query_result = query(deps.as_ref(), mock_env(), q_msg_richest);
+        assert!(query_result.is_ok());
+        let query_answer = from_binary::<QueryAnswer>(&query_result.unwrap()).unwrap();
+        assert_eq!(query_answer, QueryAnswer::AmIRichest { richest: false });
+
+        // cannot view result with wrong vk ----------------------
+        // AllInfo
+        let q_msg_wrong_vk_all = QueryMsg::AllInfo { addr: Addr::unchecked("alice"), key: "vk_wrong".to_string() };
+        let query_result = query(deps.as_ref(), mock_env(), q_msg_wrong_vk_all);
+        assert_gen_err(query_result, "Wrong viewing key for this address or viewing key not set");
+
+        // AmIRichest
+        let q_msg_wrong_vk_richest = QueryMsg::AmIRichest { addr: Addr::unchecked("alice"), key: "vk_wrong".to_string() };
+        let query_result = query(deps.as_ref(), mock_env(), q_msg_wrong_vk_richest);
+        assert_gen_err(query_result, "Wrong viewing key for this address or viewing key not set");
+
+        // cannot view result with "wrong address" ----------------------
+        // AllInfo
+        let q_msg_wrong_addr_all = QueryMsg::AllInfo { addr: Addr::unchecked("bob"), key: "vka".to_string() };
+        let query_result = query(deps.as_ref(), mock_env(), q_msg_wrong_addr_all);
+        assert_gen_err(query_result, "Wrong viewing key for this address or viewing key not set");
+        
+        // AmIRichest
+        let q_msg_wrong_addr_richest = QueryMsg::AmIRichest { addr: Addr::unchecked("bob"), key: "vka".to_string() };
+        let query_result = query(deps.as_ref(), mock_env(), q_msg_wrong_addr_richest);
+        assert_gen_err(query_result, "Wrong viewing key for this address or viewing key not set");
+        
     }
 }
