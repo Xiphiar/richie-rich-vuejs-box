@@ -1,7 +1,7 @@
 [package]
-name = "richie-rich-box"
+name = "richie-rich-vuejs-box"
 version = "0.1.0"
-authors = ["DDT"]
+authors = ["DDT <ddt@scrt.university>"]
 edition = "2021"
 description = "Secret Box app for the Richie Rich contract"
 license = "MIT"

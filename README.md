@@ -123,6 +123,7 @@ To use the Swagger or OpenAPI interaces append `/swagger/` or `/openapi/` to the
 - [Vue](https://vuejs.org) - Progressive javascript framework
 
 # Contributors
+- DDT [Github](https://github.com/DDT5) - secret contract development
 - Laura SecretChainGirl [Github](https://github.com/secetchaingirl) - secret contract development
 - Alex Sinplea [Github](https://github.com/sinplea) - frontend development
 - Jeff SecretMickey - [Telegram](https://t.me/secretMickey) Lead UI/UX design

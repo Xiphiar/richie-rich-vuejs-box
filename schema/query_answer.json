@@ -1,23 +1,28 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ExecuteMsg",
+  "title": "QueryAnswer",
+  "description": "We define a custom struct for each query response",
   "oneOf": [
     {
       "type": "object",
       "required": [
-        "submit_net_worth"
+        "AllInfo"
       ],
       "properties": {
-        "submit_net_worth": {
+        "AllInfo": {
           "type": "object",
           "required": [
-            "networth"
+            "networth",
+            "richest"
           ],
           "properties": {
             "networth": {
               "type": "integer",
               "format": "uint128",
               "minimum": 0.0
+            },
+            "richest": {
+              "type": "boolean"
             }
           }
         }
@@ -27,17 +32,17 @@
     {
       "type": "object",
       "required": [
-        "set_viewing_key"
+        "AmIRichest"
       ],
       "properties": {
-        "set_viewing_key": {
+        "AmIRichest": {
           "type": "object",
           "required": [
-            "key"
+            "richest"
           ],
           "properties": {
-            "key": {
-              "type": "string"
+            "richest": {
+              "type": "boolean"
             }
           }
         }

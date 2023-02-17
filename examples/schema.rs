@@ -3,8 +3,8 @@ use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 
-use richie_rich_box::msg::{QueryAnswer, ExecuteMsg, InstantiateMsg, QueryMsg};
-use richie_rich_box::state::Outcome;
+use richie_rich_vuejs_box::msg::{QueryAnswer, ExecuteMsg, InstantiateMsg, QueryMsg};
+use richie_rich_vuejs_box::state::Outcome;
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
