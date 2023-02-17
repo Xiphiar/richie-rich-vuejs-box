@@ -13,6 +13,7 @@ pub const PREFIX_BALANCES: &[u8] = b"balances";
 
 
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct Outcome {
     pub richest: Millionaire,
 }
@@ -45,6 +46,7 @@ pub fn state_read(storage: &dyn Storage) -> ReadonlySingleton<Outcome> {
 
 
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct Millionaire {
     pub addr: Addr,
     pub networth: u128,
@@ -53,9 +55,10 @@ pub struct Millionaire {
 pub static NETWORTHS: Item<u128> = Item::new(PREFIX_BALANCES);
 pub struct NetWorthStore {}
 impl NetWorthStore {
-    pub fn load(store: &dyn Storage, account: &Addr) -> u128 {
+    pub fn may_load(store: &dyn Storage, account: &Addr) -> Option<u128> {
         let balances = NETWORTHS.add_suffix(account.as_str().as_bytes());
-        balances.load(store).unwrap_or_default()
+        // balances.load(store).unwrap_or_default()
+        balances.may_load(store).unwrap()
     }
 
     pub fn save(store: &mut dyn Storage, account: &Addr, amount: u128) -> StdResult<()> {

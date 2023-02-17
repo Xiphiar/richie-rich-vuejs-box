@@ -114,8 +114,14 @@ pub fn try_submit_net_worth(
     info: MessageInfo,
     networth: u128,
 ) -> Result<Response, ContractError> {
-    // saves submission for each address can view their latest submission -- will override existing if exists
-    NetWorthStore::save(deps.storage, &info.sender, networth)?;
+    // checks that account has not already submitted -- can only submit once
+    match NetWorthStore::may_load(deps.storage, &info.sender) {
+        Some(networth) => return Err(ContractError::AlreadySubmittedNetworth { networth }),
+        None => {
+            // saves submission for each address can view their submission
+            NetWorthStore::save(deps.storage, &info.sender, networth)?;
+        },
+    }
 
     // Compares networth with current highest, and update state if necessary
     // For simplicity, if networth is equal, the first Millionaire remains the richest
@@ -143,7 +149,11 @@ fn query_all_info(
 ) -> StdResult<QueryAnswer> {
     let outcome = state_read(deps.storage).load()?;
     let richest = outcome.richest.addr == addr;
-    let networth = NetWorthStore::load(deps.storage, &addr);
+    let may_networth = NetWorthStore::may_load(deps.storage, &addr);
+    let networth = match may_networth {
+        Some(x) => x,
+        None => return Err(StdError::GenericErr { msg: "You have not submitted your networth".to_string() }),
+    };
 
     let resp = QueryAnswer::AllInfo { 
         richest,
@@ -171,6 +181,8 @@ fn query_richest(
 #[cfg(test)]
 mod tests {
     use std::any::Any;
+
+    use crate::state::Millionaire;
 
     use super::*;
 
@@ -206,22 +218,29 @@ mod tests {
         res_vec
     }
 
-    // fn extract_generic_error_msg<T: Any>(error: StdResult<T>) -> String {
-    //     match error {
-    //         Ok(_) => panic!("An error was expected, but no error could be extracted"),
-    //         Err(err) => match err {
-    //             StdError::GenericErr { msg, .. } => msg,
-    //             _ => panic!("Unexpected result"),
-    //         },
-    //     }
-    // }
+    fn assert_info(deps: Deps, acc: &str, exp_richest: bool, exp_networth: u128) {
+        let res = query_all_info(deps, Addr::unchecked(acc)).unwrap();
 
-    fn assert_gen_err<T: Any>(result: StdResult<T>, err_string: &str) -> bool {
+        match res {
+            QueryAnswer::AllInfo { richest, networth } => {
+                assert_eq!(richest, exp_richest); assert_eq!(networth, exp_networth);       
+            },
+            res => panic!("unexpected QueryAnswer type: {res:?}"),
+        }
+    }
+
+    fn assert_info_vec(deps: Deps, acc_richest_networth: Vec<(&str, bool, u128)>) {
+        for (acc, exp_richest, exp_networth) in acc_richest_networth {
+            assert_info(deps, acc, exp_richest, exp_networth);
+        }
+    }
+
+    fn assert_gen_err<T: Any>(result: StdResult<T>, err_str_includes: &str) -> bool {
         match result {
             Ok(_) => panic!("An error was expected, but no error could be extracted"),
             Err(err) => match err {
                 StdError::GenericErr { msg, .. } => {
-                    msg.contains(err_string)
+                    msg.contains(err_str_includes)
                 },
                 _ => panic!("Unexpected result"),
             },
@@ -235,14 +254,8 @@ mod tests {
         // we can call .unwrap() to assert this was a success
         assert_eq!(0, res.unwrap().messages.len());
 
-        let res = query_all_info(deps.as_ref(), Addr::unchecked("alice")).unwrap();
-        // behavior when querying an address that has not submitted anything:
-        match res {
-            QueryAnswer::AllInfo { richest, networth } => {
-                assert_eq!(richest, false); assert_eq!(networth, 0);       
-            },
-            res => panic!("unexpected QueryAnswer type: {res:?}"),
-        }
+        let state = state_read(deps.as_ref().storage).load().unwrap();
+        assert_eq!(state, Outcome { richest: Millionaire { addr: Addr::unchecked(""), networth: 0u128 } });
     }
 
     #[test]
@@ -265,6 +278,56 @@ mod tests {
             },
             res => panic!("unexpected QueryAnswer type: {res:?}"),
         }
+    }
+
+    #[test]
+    fn test_richest_logic() {
+        let (_, mut deps) = init_helper();
+        submit_networth_helper(&mut deps, vec![("alice", 1), ("bob", 2)]);
+
+        assert_info_vec(deps.as_ref(), vec![
+            ("alice", false, 1), ("bob", true, 2)
+        ]);
+
+        // cannot resubmit
+        let msg = ExecuteMsg::SubmitNetWorth { networth: 3 };
+        let info = mock_info("alice", &[]);
+        let res = execute(deps.as_mut(), mock_env(), info, msg);
+        match res {
+            Ok(_) => assert!(false, "expected an error, but got success"),
+            Err(err) => match err {
+                ContractError::Std(_) => assert!(false, "expected an ContractError, but got StdError"),
+                ContractError::AlreadySubmittedNetworth { networth } => {
+                    assert_eq!(networth, 1)
+                },
+            },
+        }
+
+        // tied networth => previous `richest` remains the same
+        submit_networth_helper(&mut deps, vec![("carol", 2)]);
+        assert_info_vec(deps.as_ref(), vec![
+            ("alice", false, 1), ("bob", true, 2), ("carol", false, 2)
+        ]);
+
+        // new richest
+        submit_networth_helper(&mut deps, vec![("dan", 3)]);
+        assert_info_vec(deps.as_ref(), vec![
+            ("alice", false, 1), ("bob", false, 2), ("carol", false, 2), ("dan", true, 3)
+        ]);
+
+        // new but not richest
+        submit_networth_helper(&mut deps, vec![("eve", 2)]);
+        assert_info_vec(deps.as_ref(), vec![
+            ("alice", false, 1), ("bob", false, 2), ("carol", false, 2), ("dan", true, 3), ("eve", false, 2)
+        ]);
+
+        // executing set viewing key does not change state on submissions
+        let setvk_msg = ExecuteMsg::SetViewingKey { key: "vka".to_string() };
+        let info = mock_info("alice", &[]);
+        execute(deps.as_mut(), mock_env(), info, setvk_msg).unwrap();
+        assert_info_vec(deps.as_ref(), vec![
+            ("alice", false, 1), ("bob", false, 2), ("carol", false, 2), ("dan", true, 3), ("eve", false, 2)
+        ]);
     }
 
     #[test]
