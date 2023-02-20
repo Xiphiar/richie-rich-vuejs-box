@@ -7,7 +7,7 @@ import {
   initSecretjsClient,
 } from "./ContractApi"
 import type { 
-  UserInputs, FormRow, FormRowInput,
+  UserInputs, FormRow, FormInput,
   CustomPermission, 
   QueryResult, AllInfoResult, AmIRichestResult,
 } from './Types'
@@ -45,65 +45,84 @@ function handleScroll() {
 
 // -------------------
 
-const formrows = reactive<FormRow[]>([{
+/** The form inputs and buttons for contract execute functions
+ * and generate permit (ie: those that require signing with private key)
+ */
+const formExecRows = reactive<FormRow[]>([{
   headerText: "Execute functions",
-    onFunction: onSubmitNetworth,  
-    inputs: [{
+  inputs: [{
       field: 'networth',
       placeholderText: "1000",
-    }],
-    buttonText: "Submit Networth",
+  }],
+  buttons: [{
+      onFunction: onSubmitNetworth, 
+      buttonText: "Submit Networth",
+  }]
   },
   {
     headerText: "",
-    onFunction: onSetViewingKey,  
     inputs: [{
-      field: 'viewingKey',
-      placeholderText: "my_viewing_key",
+        field: 'viewingKey',
+        placeholderText: "my_viewing_key",
     }],
-    buttonText: "Set viewing key",
+    buttons: [{
+        onFunction: onSetViewingKey,  
+        buttonText: "Set viewing key",
+    }],
   },
   {
     headerText: "Generate permit",
-    onFunction: onGeneratePermit,  
     inputs: [{
-      field: 'permitName',
-      placeholderText: "Permit name",
-    },
-    {
-      field: 'permission',
-      placeholderText: '"all_info" or "am_i_richest"',
+        field: 'permitName',
+        placeholderText: "Permit name",
+      },
+      {
+        field: 'permission',
+        placeholderText: '"all_info" or "am_i_richest"',
     }],
-    buttonText: "Sign permit",
-  },
-  {
-    headerText: "Queries",
-    onFunction: onQueryAllInfo,  
-    inputs: [{
-      field: 'queryAddr',
-      placeholderText: "addr",
-    },
-    {
-      field: 'queryKey',
-      placeholderText: "viewing key",
-    }],
-    buttonText: "Query: All Info",
-  },
-  {
-    headerText: "",
-    onFunction: onQueryAmIRichest,  
-    inputs: [{
-      field: 'queryAddr',
-      placeholderText: "addr",
-    },
-    {
-      field: 'queryKey',
-      placeholderText: "viewing key",
-    }],
-    buttonText: "Query: Am I Richest",
+    buttons: [{
+        onFunction: onGeneratePermit,  
+        buttonText: "Sign permit",
+    }]
   },
 ])
 
+/** The form inputs and buttons for contract query functions */
+const formQueryRows = reactive<FormRow[]>([{
+    headerText: "Viewing key queries",
+    inputs: [{
+        field: 'queryAddr',
+        placeholderText: "addr",
+      },
+      {
+        field: 'queryKey',
+        placeholderText: "viewing key",
+    }],
+    buttons: [{
+        onFunction: onQueryAllInfo,  
+        buttonText: "VK Query: All Info",
+      },
+      {
+        onFunction: onQueryAmIRichest,  
+        buttonText: "VK Query: Am I Richest",
+    }],
+  },
+  {
+  headerText: "Permit queries",
+    inputs: [{
+        field: 'permitId',
+        placeholderText: "select permit by entering permit id number",
+    }],
+    buttons: [{
+        onFunction: onQueryAllInfoWithPermit,  
+        buttonText: "Permit Query: All Info",
+      },
+      {
+        onFunction: onQueryAmIRichestWithPermit,  
+        buttonText: "Permit Query: Am I Richest",
+    }],
+  },
+])
 
 let inputs: UserInputs = reactive({
   networth: '',
@@ -112,6 +131,7 @@ let inputs: UserInputs = reactive({
   permission: '',
   queryAddr: '',
   queryKey: '',
+  permitId: 0,
 })
 
 
@@ -121,9 +141,9 @@ let contractResponse = reactive({
     networth: '',
   } as QueryResult,
 
-  permit: {
+  permits: [{
     params: {
-        permit_name: '',
+        permit_name: 'Unsigned permit',
         allowed_tokens: [''],
         chain_id: '',
         permissions: ['allowance'],  // to get around the secretjs fixed Permission type
@@ -133,31 +153,31 @@ let contractResponse = reactive({
         type: '',
         value: '',
       },
-      signature: '',
+      signature: '<blank>',
     },
-  } as Permit,
+  }] as Permit[],
 })
 // init contractResponse
 contractResponse.query=''
 
-async function onSubmitNetworth() {
-  const acc = accounts[0]
+async function onSubmitNetworth(acc: SecretNetworkClient) {
+  // const acc = accounts[0]
   await handleSubmitNetworth(acc, inputs.networth)
   inputs.networth = ''
 }
 
-async function onSetViewingKey() {
-  const acc = accounts[0]
+async function onSetViewingKey(acc: SecretNetworkClient) {
+  // const acc = accounts[0]
   await handleSetViewingKey(acc, inputs.viewingKey)
   inputs.viewingKey = ''
 }
 
-async function onGeneratePermit(): Promise<void> {
-  const acc = accounts[0]
+async function onGeneratePermit(acc: SecretNetworkClient): Promise<void> {
+  // const acc = accounts[0]
   const res = await handleGeneratePermit(acc, inputs.permitName, [inputs.permission])
   inputs.permitName = ''
   inputs.permission = ''
-  contractResponse.permit = res
+  contractResponse.permits.push(res)
 }
 
 async function onQueryAllInfo() {
@@ -169,6 +189,18 @@ async function onQueryAllInfo() {
 async function onQueryAmIRichest() {
   const acc = accounts[0]
   const res = await handleQueryAmIRichest(acc, inputs.queryAddr, inputs.queryKey)
+  contractResponse.query = res
+}
+
+async function onQueryAllInfoWithPermit() {
+  const acc = accounts[0]
+  const res = await handleQueryAllInfoWithPermit(acc, contractResponse.permits[inputs.permitId])
+  contractResponse.query = res
+}
+
+async function onQueryAmIRichestWithPermit() {
+  const acc = accounts[0]
+  const res = await handleQueryAmIRichestWithPermit(acc, contractResponse.permits[inputs.permitId])
   contractResponse.query = res
 }
 
@@ -196,36 +228,61 @@ async function onQueryAmIRichest() {
   </div>
 
   <div v-if="showApp">
-    <div v-for="row in formrows" class="w-full justify-items-center mt-4 mb-4">
-      <p>{{ row.headerText }}</p>
-      <form @submit.prevent=row.onFunction>
-        <div class="grid grid-cols-3 grid-flow-col h-full text-xl leading-none">
-          <input v-for="input in row.inputs" 
-            :class='row.inputs.length !== 2 ? "col-span-2 rounded-md ml-4 outline" : "rounded-md ml-4 outline"'
-            :placeholder=input.placeholderText
-            v-model="inputs[input.field]"
-          >
-          <button class="w-4/5 bg-box-yellow self-center px-1 py-1 rounded-md ml-4"> 
-            {{ row.buttonText }} 
-          </button>
-        </div>
-      </form>
+    <h1 class="text-xl font-bold mt-10">Account-level messages</h1>
+    <div v-for="account in accounts">
+      <h2 class="mt-4">Account: {{ account.address }}</h2>
+      <div v-for="row in formExecRows" class="w-full justify-items-center mt-2 ml-4 mb-4">
+        <p class="italic mb-2">{{ row.headerText }}</p>
+        <form @submit.prevent=row.buttons[0].onFunction(account)>
+          <div class="grid grid-cols-3 grid-flow-col h-full leading-none">
+            <input v-for="input in row.inputs" 
+              :class='row.inputs.length !== 2 
+                ? "col-span-2 rounded-md ml-4 outline" 
+                : "rounded-md ml-4 outline"'
+              :placeholder=input.placeholderText
+              v-model="inputs[input.field]"
+            >
+            <button class="w-4/5 bg-box-yellow self-center px-1 py-1 rounded-md ml-4"> 
+              {{ row.buttons[0].buttonText }} 
+            </button>
+          </div>
+        </form>
+      </div>
+      <hr>
     </div>
-    <p class="w-full">
-      <strong> Debug:-- </strong>
-      vmodel: {{ formrows[0].inputs[0].field }} <br>
-      networth input: {{inputs.networth}}  
-    </p>
-    
-    <p class="text-center mt-6 mb-6">
-      <span class="font-semibold">Permit: </span>
-      {{ contractResponse.permit }}
-    </p>
+      
+    <h1 class="text-xl font-bold mt-5">Queries</h1>
+    <div v-for="qrow in formQueryRows" class="w-full justify-items-center mt-4 ml-4 mb-4">
+      <p class="italic mb-2">{{ qrow.headerText }}</p>
+      <div class="grid grid-cols-3 grid-flow-col h-full leading-none">
+        <input v-for="input in qrow.inputs" 
+          class="rounded-md ml-4 outline"
+          :placeholder=input.placeholderText
+          v-model="inputs[input.field]"
+        >
+      </div>
+      <div class="grid grid-cols-3 mt-2 mb-2">
+        <button v-for="button in qrow.buttons"
+          @submit.prevent=button.onFunction 
+          class="w-4/5 col-start-3 bg-box-yellow self-center px-1 py-1 rounded-md ml-4 mt-1 mb-1"> 
+          {{ button.buttonText }} 
+        </button>
+      </div>
+    </div>
 
-    <p class="text-center mt-6 mb-6">
-      <span class="font-semibold">Query response: </span>{{ contractResponse.query }}
+    <p class="font-semibold">Permits:</p>
+    <ol class="list-decimal list-inside text-left text-xs mb-6"> 
+      <li v-for="(permit, id) in contractResponse.permits">
+        Permit name: {{ permit.params.permit_name }}; Signature: {{ permit.signature.signature }}
+      </li>
+    </ol>
+
+    <p class="font-semibold">Query response:</p>
+    <p class="text-left ml-3 mb-5">
+      {{ contractResponse.query }}
     </p>
     
+    <hr>
 
     <div class="grid w-full justify-items-center mb-16">
       <button @click="" class="font-semibold text-[#4E4B66] dark:text-white border-2 border-[#4E4B66] dark:border-white px-8 py-3 rounded-md">New round</button>

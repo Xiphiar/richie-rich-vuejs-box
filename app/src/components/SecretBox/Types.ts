@@ -40,16 +40,21 @@ export type UserInputs = {
   permission: CustomPermission,
   queryAddr: string,
   queryKey: string,
+  permitId: number,
 } 
 
 export type FormRow = {
   headerText: string
-  onFunction: () => Promise<void>,
-  inputs: FormRowInput[],
-  buttonText: string,
+  inputs: FormInput[],
+  buttons: FormButton<SecretNetworkClient>[],
 }
 
-export type FormRowInput = {
+export type FormInput = {
   field: keyof UserInputs,
   placeholderText: string,
+}
+
+export type FormButton<T> = {
+  onFunction: (acc: T) => Promise<void>,  
+  buttonText: string,
 }
