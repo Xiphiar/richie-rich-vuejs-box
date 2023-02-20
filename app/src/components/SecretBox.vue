@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { Wallet, SecretNetworkClient, Permission } from "secretjs"
+import { onMounted, ref, reactive, computed } from 'vue'
+import { Wallet, SecretNetworkClient, Permission, Permit } from "secretjs"
 import { AminoWallet } from 'secretjs/dist/wallet_amino';
 
 // Secret.js Client
@@ -45,7 +45,7 @@ onMounted(async () => {
 
 // Smart contract interface -------------------------------
 
-const submitNetworth = async (
+const handleSubmitNetworth = async (
   networth: string
 ) => {
   const tx = await secretjs.tx.compute.executeContract(
@@ -65,7 +65,7 @@ const submitNetworth = async (
   // count.value = await queryCounter()
 }
 
-const setViewingKey = async (
+const handleSetViewingKey = async (
   key: string,
 ) => {
   const tx = await secretjs.tx.compute.executeContract(
@@ -85,7 +85,7 @@ const setViewingKey = async (
   // count.value = await queryCounter()
 }
 
-const queryAllInfo = async (
+const handleQueryAllInfo = async (
   addr: string,
   key: string,
 ) => {
@@ -96,18 +96,18 @@ const queryAllInfo = async (
       addr,
       key,
     } },
-  })) as AllInfoResponse;
+  })) as AllInfoResponse | string;
 
-  if ('err"' in response) {
-    throw new Error(
-      `Query failed with the following err: ${JSON.stringify(response)}`
-    )
-  }
+  // if ('err"' in response) {
+  //   throw new Error(
+  //     `Query failed with the following err: ${JSON.stringify(response)}`
+  //   )
+  // }
 
   return response
 }
 
-const queryAmIRichest = async (
+const handleQueryAmIRichest = async (
   addr: string,
   key: string,
 ) => { 
@@ -118,21 +118,21 @@ const queryAmIRichest = async (
       addr,
       key,
     } },
-  })) as AmIRichestResponse;
+  })) as AmIRichestResponse | string;
 
-  if ('err"' in response) {
-    throw new Error(
-      `Query failed with the following err: ${JSON.stringify(response)}`
-    )
-  }
+  // if ('err"' in response) {
+  //   throw new Error(
+  //     `Query failed with the following err: ${JSON.stringify(response)}`
+  //   )
+  // }
 
   return response
 }
 
-async function queryAllInfoWithPermit(
+async function handleQueryAllInfoWithPermit(
   account: Account,
 ) {
-  const permit = await generatePermit(account, ["all_info"]);
+  const permit = await handleGeneratePermit(account, ["all_info"]);
 
   const msg = { with_permit: {
     permit,
@@ -148,10 +148,10 @@ async function queryAllInfoWithPermit(
   return response;
 }
 
-async function queryAmIRichestWithPermit(
+async function handleQueryAmIRichestWithPermit(
   account: Account,
 ) {
-  const permit = await generatePermit(account, ["am_i_richest"]);
+  const permit = await handleGeneratePermit(account, ["am_i_richest"]);
 
   const msg = { with_permit: {
     permit,
@@ -170,16 +170,17 @@ async function queryAmIRichestWithPermit(
 
 // TS types and helper functions
 
-async function generatePermit(
+async function handleGeneratePermit(
   account: Account,
   permits: CustomPermission[],
-) {
+): Promise<Permit> {
   const { secretjs } = account;
   const permit = await secretjs.utils.accessControl.permit.sign(
     account.address,
     "secret-4",
     "permitname",
     [secretBoxAddress],
+    // @ts-ignore
     permits, // ["owner"],
     false,
   );
@@ -187,9 +188,9 @@ async function generatePermit(
 }
 
 type AllInfoResponse = { 
-    richest: boolean,
-    networth: number, 
-  }
+  richest: boolean,
+  networth: number, 
+}
 
 type AmIRichestResponse = { 
   richest: boolean,
@@ -227,6 +228,117 @@ function handleScroll() {
   }
 }
 
+// -------------------
+
+const formrows = reactive<FormRow[]>([{
+  headerText: "hey",
+    onFunction: onSubmitNetworth,  
+    inputs: [{
+      field: 'networth',
+      placeholderText: "1000",
+    }],
+    buttonText: "Submit Networth",
+  },
+  {
+    headerText: "hey",
+    onFunction: onSetViewingKey,  
+    inputs: [{
+      field: 'viewingKey',
+      placeholderText: "my_viewing_key",
+    }],
+    buttonText: "Set viewing key",
+  },
+  {
+    headerText: "hey",
+    onFunction: onQueryAllInfo,  
+    inputs: [{
+      field: 'queryAllInfoAddr',
+      placeholderText: "addr",
+    },
+    {
+      field: 'queryAllInfoKey',
+      placeholderText: "viewing key",
+    }],
+    buttonText: "Query: All Info",
+  },
+  {
+    headerText: "",
+    onFunction: onQueryAllInfo,  
+    inputs: [{
+      field: 'queryAmIRichestAddr',
+      placeholderText: "addr",
+    },
+    {
+      field: 'queryAmIRichestKey',
+      placeholderText: "viewing key",
+    }],
+    buttonText: "Query: Am I Richest",
+  },
+])
+
+type UserInputs = {
+  networth: string,
+  viewingKey: string,
+  queryAllInfoAddr: string,
+  queryAllInfoKey: string,
+  queryAmIRichestAddr: string,
+  queryAmIRichestKey: string,
+} 
+
+type FormRow = {
+  headerText: string
+  onFunction: () => Promise<void>,
+  inputs: FormRowInput[],
+  buttonText: string,
+}
+
+type FormRowInput = {
+  field: keyof UserInputs,
+  placeholderText: string,
+}
+
+let inputs: UserInputs = reactive({
+  networth: '',
+  viewingKey: '',
+  queryAllInfoAddr: '',
+  queryAllInfoKey: '',
+  queryAmIRichestAddr: '',
+  queryAmIRichestKey: '',
+})
+
+
+let results = reactive({
+  queryAllInfo: {
+    richest: false,
+    networth: '',
+  } as unknown as AllInfoResponse | string,
+})
+// init result
+results.queryAllInfo=''
+
+async function onSubmitNetworth() {
+  await handleSubmitNetworth(inputs.networth)
+  inputs.networth = ''
+}
+
+async function onSetViewingKey() {
+  await handleSetViewingKey(inputs.viewingKey)
+  inputs.viewingKey = ''
+}
+
+async function onQueryAllInfo() {
+  const res = await handleQueryAllInfo(inputs.queryAllInfoAddr, inputs.queryAllInfoKey)
+  results.queryAllInfo = res
+}
+
+// if not connected to smart contract: ------------
+
+// let submitted = {
+
+// }
+
+// ------------------------------------------------
+
 </script>
 
 <template>
@@ -244,13 +356,33 @@ function handleScroll() {
   </div>
 
   <div v-if="showApp">
-    <div class="grid grid-cols-3 w-full justify-items-center mt-12 mb-16">
-      <div class="col-start-2 h-full font-bold text-[160px] leading-none"></div>
-      <button @click="submitNetworth" class="cols-start-3 w-max bg-box-yellow h-max self-center px-9 py-4 font-semibold rounded-md text-2xl ml-4"> Submit Networth </button>
+    <div v-for="row in formrows" class="w-full justify-items-center mt-4 mb-4">
+      <p>{{ row.headerText }}</p>
+      <form @submit.prevent=row.onFunction>
+        <div class="grid grid-cols-3 grid-flow-col h-full text-xl leading-none">
+          <input v-for="input in row.inputs" 
+            :class='row.inputs.length !== 2 ? "col-span-2 rounded-md ml-4 outline" : "rounded-md ml-4 outline"'
+            :placeholder=input.placeholderText
+            v-model="inputs[input.field]"
+          >
+          <button class="w-4/5 bg-box-yellow self-center px-1 py-1 rounded-md ml-4"> 
+            {{ row.buttonText }} 
+          </button>
+        </div>
+      </form>
     </div>
+    <p class="w-full">
+      vmodel: {{ formrows[0].inputs[0].field }} <br>
+      networth input: {{inputs.networth}}  
+    </p>
+    
+    <p class="text-center mt-6 mb-6">
+      <span class="font-semibold" >Query response: </span>{{ results.queryAllInfo }}
+    </p>
+    
 
     <div class="grid w-full justify-items-center mb-16">
-      <button @click="queryAllInfo" class="font-semibold text-[#4E4B66] dark:text-white border-2 border-[#4E4B66] dark:border-white px-8 py-3 rounded-md">Get Info</button>
+      <button @click="" class="font-semibold text-[#4E4B66] dark:text-white border-2 border-[#4E4B66] dark:border-white px-8 py-3 rounded-md">New round</button>
     </div>
   </div>
 </template>

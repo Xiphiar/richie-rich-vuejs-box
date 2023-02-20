@@ -67,6 +67,12 @@ deploy:
 deploybox:
 	./scripts/create_secret_box.sh
 
+# Launched Secret Box front end app 
+.PHONY: launchapp
+launchapp:
+	yarn --cwd ./app/ install && \
+	yarn --cwd ./app/ dev
+
 .PHONY: clean
 clean:
 	cargo clean
