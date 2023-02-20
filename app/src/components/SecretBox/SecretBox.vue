@@ -1,27 +1,26 @@
 <script setup lang="ts">
 import { onMounted, ref, reactive, computed } from 'vue'
-import { Wallet, SecretNetworkClient, Permission, Permit } from "secretjs"
+import { SecretNetworkClient, Permit } from "secretjs"
 import { 
   handleGeneratePermit, handleQueryAllInfo, handleQueryAllInfoWithPermit,
   handleQueryAmIRichest, handleQueryAmIRichestWithPermit, handleSetViewingKey, handleSubmitNetworth,
   initSecretjsClient,
 } from "./ContractApi"
 import type { 
-  UserInputs, FormRow, FormInput,
-  CustomPermission, 
-  QueryResult, AllInfoResult, AmIRichestResult,
+  UserInputs, FormRow,
+  QueryResult,
 } from './Types'
 
 
 const showApp = ref(true)
-let accounts: SecretNetworkClient[] = []
+let accounts: SecretNetworkClient[] = reactive([])
 
 onMounted(async () => {
   window.addEventListener('scroll', handleScroll)
 
   // To create signer secret.js clients
   console.log("Initializing Secret.js client ...")
-  accounts = await initSecretjsClient()
+  accounts = await initSecretjsClient(accounts)
 })
 
 const props = defineProps<{
@@ -111,7 +110,7 @@ const formQueryRows = reactive<FormRow[]>([{
   headerText: "Permit queries",
     inputs: [{
         field: 'permitId',
-        placeholderText: "select permit by entering permit id number",
+        placeholderText: "enter permit id number",
     }],
     buttons: [{
         onFunction: onQueryAllInfoWithPermit,  
@@ -125,10 +124,10 @@ const formQueryRows = reactive<FormRow[]>([{
 ])
 
 let inputs: UserInputs = reactive({
-  networth: '',
-  viewingKey: '',
-  permitName: '',
-  permission: '',
+  networth: {},
+  viewingKey: {},
+  permitName: {},
+  permission: {},
   queryAddr: '',
   queryKey: '',
   permitId: 0,
@@ -162,21 +161,21 @@ contractResponse.query=''
 
 async function onSubmitNetworth(acc: SecretNetworkClient) {
   // const acc = accounts[0]
-  await handleSubmitNetworth(acc, inputs.networth)
-  inputs.networth = ''
+  await handleSubmitNetworth(acc, inputs.networth[acc.address])
+  inputs.networth[acc.address] = ''
 }
 
 async function onSetViewingKey(acc: SecretNetworkClient) {
   // const acc = accounts[0]
-  await handleSetViewingKey(acc, inputs.viewingKey)
-  inputs.viewingKey = ''
+  await handleSetViewingKey(acc, inputs.viewingKey[acc.address])
+  inputs.viewingKey[acc.address] = ''
 }
 
 async function onGeneratePermit(acc: SecretNetworkClient): Promise<void> {
   // const acc = accounts[0]
-  const res = await handleGeneratePermit(acc, inputs.permitName, [inputs.permission])
-  inputs.permitName = ''
-  inputs.permission = ''
+  const res = await handleGeneratePermit(acc, inputs.permitName[acc.address], [inputs.permission[acc.address]])
+  inputs.permitName[acc.address] = ''
+  inputs.permission[acc.address] = ''
   contractResponse.permits.push(res)
 }
 
@@ -240,7 +239,8 @@ async function onQueryAmIRichestWithPermit() {
                 ? "col-span-2 rounded-md ml-4 outline" 
                 : "rounded-md ml-4 outline"'
               :placeholder=input.placeholderText
-              v-model="inputs[input.field]"
+              v-model="//@ts-ignore implicit any for second field
+                inputs[input.field][account.address]"
             >
             <button class="w-4/5 bg-box-yellow self-center px-1 py-1 rounded-md ml-4"> 
               {{ row.buttons[0].buttonText }} 
@@ -248,7 +248,7 @@ async function onQueryAmIRichestWithPermit() {
           </div>
         </form>
       </div>
-      <hr>
+      <hr class="border-gray-300">
     </div>
       
     <h1 class="text-xl font-bold mt-5">Queries</h1>
@@ -263,29 +263,31 @@ async function onQueryAmIRichestWithPermit() {
       </div>
       <div class="grid grid-cols-3 mt-2 mb-2">
         <button v-for="button in qrow.buttons"
-          @submit.prevent=button.onFunction 
+          @click=button.onFunction
           class="w-4/5 col-start-3 bg-box-yellow self-center px-1 py-1 rounded-md ml-4 mt-1 mb-1"> 
           {{ button.buttonText }} 
         </button>
       </div>
     </div>
 
-    <p class="font-semibold">Permits:</p>
-    <ol class="list-decimal list-inside text-left text-xs mb-6"> 
+    <p class="font-semibold">Permits
+      <span class="text-sm font-normal">(These are stored on the front-end client, not on-chain):</span>
+    </p>
+    <ol start="0" class="list-decimal list-inside text-left text-xs mb-6"> 
       <li v-for="(permit, id) in contractResponse.permits">
         Permit name: {{ permit.params.permit_name }}; Signature: {{ permit.signature.signature }}
       </li>
     </ol>
 
-    <p class="font-semibold">Query response:</p>
-    <p class="text-left ml-3 mb-5">
-      {{ contractResponse.query }}
-    </p>
+    <div class="rounded-md outline text-center ml-3 mt-10 mb-10 py-3 bg-yellow-50">
+      <p class="font-semibold ">Query response:</p>
+      <p>{{ contractResponse.query }}</p>
+    </div>
     
-    <hr>
+    <!-- <hr>
 
     <div class="grid w-full justify-items-center mb-16">
       <button @click="" class="font-semibold text-[#4E4B66] dark:text-white border-2 border-[#4E4B66] dark:border-white px-8 py-3 rounded-md">New round</button>
-    </div>
+    </div> -->
   </div>
 </template>

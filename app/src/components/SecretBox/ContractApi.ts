@@ -1,7 +1,7 @@
-import { Wallet, SecretNetworkClient, Permission, Permit } from "secretjs"
+import { Wallet, SecretNetworkClient, Permit } from "secretjs"
 import type { 
   CustomPermission,
-  QueryResult, AllInfoResult, AmIRichestResult,
+  AllInfoResult, AmIRichestResult,
 } from './Types'
 
 // Get environment variables from .env
@@ -26,8 +26,7 @@ const mnemonics = [
   "word twist toast cloth movie predict advance crumble escape whale sail such angry muffin balcony keen move employ cook valve hurt glimpse breeze brick",
 ]
 
-export const initSecretjsClient = async () => {
-  let accounts: SecretNetworkClient[] = [];
+export const initSecretjsClient = async (accounts: SecretNetworkClient[]) => {
   for (const mnemonic of mnemonics) {
     const wallet = new Wallet(mnemonic)
     let secretjs = await SecretNetworkClient.create({
@@ -64,7 +63,6 @@ export const handleSubmitNetworth = async (
   })
 
   console.log("Submitted networth")
-  // count.value = await queryCounter()
 }
 
 export const handleSetViewingKey = async (
@@ -85,7 +83,6 @@ export const handleSetViewingKey = async (
   })
 
   console.log("Viewing key set")
-  // count.value = await queryCounter()
 }
 
 export const handleQueryAllInfo = async (
@@ -107,6 +104,8 @@ export const handleQueryAllInfo = async (
   //     `Query failed with the following err: ${JSON.stringify(response)}`
   //   )
   // }
+
+  console.log("Queried all info with viewing key")
 
   return response
 }
@@ -131,6 +130,8 @@ export const handleQueryAmIRichest = async (
   //   )
   // }
 
+  console.log("Queried am I richest with viewing key")
+
   return response
 }
 
@@ -150,6 +151,8 @@ export async function handleQueryAllInfoWithPermit(
     codeHash: secretBoxHash,
     query: msg,
   })) as AllInfoResult
+
+  console.log("Queried all info with permit")
 
   return response;
 }
@@ -171,6 +174,8 @@ export async function handleQueryAmIRichestWithPermit(
     query: msg,
   })) as AmIRichestResult
 
+  console.log("Queried am I richest with permit")
+
   return response;
 }
 
@@ -188,5 +193,8 @@ export async function handleGeneratePermit(
     permissions, // ["owner"],
     false,
   );
+
+  console.log(`Generated permit for ${account.address}`)
+
   return permit;
 }

@@ -1,5 +1,4 @@
-import { Wallet, SecretNetworkClient, Permission, Permit } from "secretjs"
-import { AminoWallet } from 'secretjs/dist/wallet_amino';
+import { SecretNetworkClient, } from "secretjs"
 
 
 // =========================================
@@ -34,14 +33,18 @@ export type CustomPermission = "all_info" | "am_i_richest" | ""
 // =========================================
 
 export type UserInputs = {
-  networth: string,
-  viewingKey: string,
-  permitName: string,
-  permission: CustomPermission,
+  networth: AccountLevelInputs<string>,
+  viewingKey: AccountLevelInputs<string>,
+  permitName: AccountLevelInputs<string>,
+  permission: AccountLevelInputs<CustomPermission>,
   queryAddr: string,
   queryKey: string,
   permitId: number,
 } 
+
+type AccountLevelInputs<T> = {
+  [key: string]: T;
+}
 
 export type FormRow = {
   headerText: string
@@ -55,6 +58,6 @@ export type FormInput = {
 }
 
 export type FormButton<T> = {
-  onFunction: (acc: T) => Promise<void>,  
+  onFunction: (acc: T) => Promise<void>,// | (() => Promise<void>),
   buttonText: string,
 }
