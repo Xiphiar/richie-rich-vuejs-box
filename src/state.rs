@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Storage, StdResult};
+use cosmwasm_std::{Addr, Storage, StdResult, Uint128};
 use cosmwasm_storage::{
     ReadonlySingleton, singleton, Singleton,
     singleton_read,
@@ -23,12 +23,12 @@ impl Outcome {
         Self {
             richest: Millionaire { 
                 addr: Addr::unchecked(""), 
-                networth: 0, 
+                networth: Uint128::zero(), 
             },
         }
     }
 
-    pub fn update_richest(&mut self, addr: Addr, networth: u64) {
+    pub fn update_richest(&mut self, addr: Addr, networth: Uint128) {
         self.richest = Millionaire {
             addr,
             networth,
@@ -49,19 +49,19 @@ pub fn state_read(storage: &dyn Storage) -> ReadonlySingleton<Outcome> {
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct Millionaire {
     pub addr: Addr,
-    pub networth: u64,
+    pub networth: Uint128,
 }
 
-pub static NETWORTHS: Item<u64> = Item::new(PREFIX_BALANCES);
+pub static NETWORTHS: Item<Uint128> = Item::new(PREFIX_BALANCES);
 pub struct NetWorthStore {}
 impl NetWorthStore {
-    pub fn may_load(store: &dyn Storage, account: &Addr) -> Option<u64> {
+    pub fn may_load(store: &dyn Storage, account: &Addr) -> Option<Uint128> {
         let balances = NETWORTHS.add_suffix(account.as_str().as_bytes());
         // balances.load(store).unwrap_or_default()
         balances.may_load(store).unwrap()
     }
 
-    pub fn save(store: &mut dyn Storage, account: &Addr, amount: u64) -> StdResult<()> {
+    pub fn save(store: &mut dyn Storage, account: &Addr, amount: Uint128) -> StdResult<()> {
         let balances = NETWORTHS.add_suffix(account.as_str().as_bytes());
         balances.save(store, &amount)
     }

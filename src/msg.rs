@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Api, StdResult};
+use cosmwasm_std::{Addr, Api, StdResult, Uint128};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use secret_toolkit::permit::Permit;
@@ -9,7 +9,7 @@ pub struct InstantiateMsg {}
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    SubmitNetWorth { networth: u64 },
+    SubmitNetWorth { networth: Uint128 },
     SetViewingKey { key: String },
 }
 
@@ -58,7 +58,7 @@ pub enum QueryWithPermit {
 pub enum QueryAnswer {
     AllInfo {
         richest: bool,
-        networth: u64
+        networth: Uint128
     },
     AmIRichest {
         richest: bool,

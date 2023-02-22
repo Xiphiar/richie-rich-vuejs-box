@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     entry_point, to_binary, Deps, DepsMut, Env,
-    MessageInfo, Response, StdResult, Addr, Binary, StdError, 
+    MessageInfo, Response, StdResult, Addr, Binary, StdError, Uint128, 
 };
 use secret_toolkit::{
     viewing_key::{ViewingKey, ViewingKeyStore}, 
@@ -112,7 +112,7 @@ fn permit_queries(deps: Deps, env: Env, permit: Permit<RichieRichPermissions>, q
 pub fn try_submit_net_worth(
     deps: DepsMut,
     info: MessageInfo,
-    networth: u64,
+    networth: Uint128,
 ) -> Result<Response, ContractError> {
     // checks that account has not already submitted -- can only submit once
     match NetWorthStore::may_load(deps.storage, &info.sender) {
@@ -206,11 +206,11 @@ mod tests {
 
     fn submit_networth_helper(
         deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier>,
-        submissions: Vec<(&str, u64)>
+        submissions: Vec<(&str, u128)>
     ) -> Vec<Response>  {
         let mut res_vec = vec![];
         for (sender, networth) in submissions {
-            let msg = ExecuteMsg::SubmitNetWorth {networth};
+            let msg = ExecuteMsg::SubmitNetWorth {networth: Uint128::from(networth)};
             let info = mock_info(sender, &[]);
             let res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
             res_vec.push(res);
@@ -218,18 +218,18 @@ mod tests {
         res_vec
     }
 
-    fn assert_info(deps: Deps, acc: &str, exp_richest: bool, exp_networth: u64) {
+    fn assert_info(deps: Deps, acc: &str, exp_richest: bool, exp_networth: u128) {
         let res = query_all_info(deps, Addr::unchecked(acc)).unwrap();
 
         match res {
             QueryAnswer::AllInfo { richest, networth } => {
-                assert_eq!(richest, exp_richest); assert_eq!(networth, exp_networth);       
+                assert_eq!(richest, exp_richest); assert_eq!(networth, Uint128::from(exp_networth));       
             },
             res => panic!("unexpected QueryAnswer type: {res:?}"),
         }
     }
 
-    fn assert_info_vec(deps: Deps, acc_richest_networth: Vec<(&str, bool, u64)>) {
+    fn assert_info_vec(deps: Deps, acc_richest_networth: Vec<(&str, bool, u128)>) {
         for (acc, exp_richest, exp_networth) in acc_richest_networth {
             assert_info(deps, acc, exp_richest, exp_networth);
         }
@@ -255,7 +255,7 @@ mod tests {
         assert_eq!(0, res.unwrap().messages.len());
 
         let state = state_read(deps.as_ref().storage).load().unwrap();
-        assert_eq!(state, Outcome { richest: Millionaire { addr: Addr::unchecked(""), networth: 0u64 } });
+        assert_eq!(state, Outcome { richest: Millionaire { addr: Addr::unchecked(""), networth: Uint128::zero() } });
     }
 
     #[test]
@@ -268,13 +268,13 @@ mod tests {
 
         match alice_query_res {
             QueryAnswer::AllInfo { richest, networth } => {
-                assert_eq!(richest, false); assert_eq!(networth, 1);       
+                assert_eq!(richest, false); assert_eq!(networth, Uint128::one());       
             },
             res => panic!("unexpected QueryAnswer type: {res:?}"),
         }
         match bob_query_res {
             QueryAnswer::AllInfo { richest, networth } => {
-                assert_eq!(richest, true); assert_eq!(networth, 2);       
+                assert_eq!(richest, true); assert_eq!(networth, Uint128::from(2u128));       
             },
             res => panic!("unexpected QueryAnswer type: {res:?}"),
         }
@@ -290,7 +290,7 @@ mod tests {
         ]);
 
         // cannot resubmit
-        let msg = ExecuteMsg::SubmitNetWorth { networth: 3 };
+        let msg = ExecuteMsg::SubmitNetWorth { networth: Uint128::from(3u128) };
         let info = mock_info("alice", &[]);
         let res = execute(deps.as_mut(), mock_env(), info, msg);
         match res {
@@ -298,7 +298,7 @@ mod tests {
             Err(err) => match err {
                 ContractError::Std(_) => assert!(false, "expected an ContractError, but got StdError"),
                 ContractError::AlreadySubmittedNetworth { networth } => {
-                    assert_eq!(networth, 1)
+                    assert_eq!(networth, Uint128::one())
                 },
             },
         }
@@ -356,7 +356,7 @@ mod tests {
         let query_result = query(deps.as_ref(), mock_env(), q_msg_all);
         assert!(query_result.is_ok());
         let query_answer = from_binary::<QueryAnswer>(&query_result.unwrap()).unwrap();
-        assert_eq!(query_answer, QueryAnswer::AllInfo { richest: false, networth: 1 });
+        assert_eq!(query_answer, QueryAnswer::AllInfo { richest: false, networth: Uint128::one() });
 
         // AmIRichest
         let query_result = query(deps.as_ref(), mock_env(), q_msg_richest);

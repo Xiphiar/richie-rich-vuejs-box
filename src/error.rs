@@ -1,4 +1,4 @@
-use cosmwasm_std::StdError;
+use cosmwasm_std::{StdError, Uint128};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -8,5 +8,5 @@ pub enum ContractError {
     Std(#[from] StdError),
 
     #[error("You have already submitted your networth: {networth:}")]
-    AlreadySubmittedNetworth { networth: u64 },
+    AlreadySubmittedNetworth { networth: Uint128 },
 }
