@@ -56,13 +56,16 @@ pub static NETWORTHS: Item<Uint128> = Item::new(PREFIX_BALANCES);
 pub struct NetWorthStore {}
 impl NetWorthStore {
     pub fn may_load(store: &dyn Storage, account: &Addr) -> Option<Uint128> {
-        let balances = NETWORTHS.add_suffix(account.as_str().as_bytes());
-        // balances.load(store).unwrap_or_default()
-        balances.may_load(store).unwrap()
+        //
+        // complete code here
+        //
+        Some(Uint128::from(0_u128))  // change this line of code
     }
 
     pub fn save(store: &mut dyn Storage, account: &Addr, amount: Uint128) -> StdResult<()> {
-        let balances = NETWORTHS.add_suffix(account.as_str().as_bytes());
-        balances.save(store, &amount)
+        //
+        // complete code here
+        //
+        Ok(()) // change this line of code
     }
 }

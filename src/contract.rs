@@ -50,62 +50,37 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         // There's some repeated code which can be moved into a separate function.
         // We've laid it our this way for clarity
         QueryMsg::AllInfo { .. } => {
-            let (address, validated_key) = msg.get_validation_params(deps.api)?;
-            let result = ViewingKey::check(deps.storage, address.as_str(), validated_key.as_str());
-            match result.is_ok() {
-                true => query_all_info(deps, address),
-                false => Err(StdError::generic_err("Wrong viewing key for this address or viewing key not set")),
-            }
+            //
+            // complete code here
+            // 
+            ()
         },
         QueryMsg::AmIRichest { .. } => {
-            let (address, validated_key) = msg.get_validation_params(deps.api)?;
-            let result = ViewingKey::check(deps.storage, address.as_str(), validated_key.as_str());
-            match result.is_ok() {
-                true => query_richest(deps, address),
-                false => Err(StdError::generic_err("Wrong viewing key for this address or viewing key not set")),
-            }
+            //
+            // complete code here
+            // 
+            ()
         },
-        QueryMsg::WithPermit { permit, query } => permit_queries(deps, env, permit, query),
+        //
+        // complete code here
+        // 
     };
 
-    to_binary(&q_response?)
+    to_binary( /* complete code here */ "placeholder")
 }
 
-fn permit_queries(deps: Deps, env: Env, permit: Permit<RichieRichPermissions>, query: QueryWithPermit) -> StdResult<QueryAnswer> {
+fn permit_queries(deps: Deps, env: Env, permit: Permit /* add generic */, query: QueryWithPermit) -> (/* complete code here */) {
     // Validate permit content
     let contract_address = env.contract.address;
-
-    let account = secret_toolkit::permit::validate(
-        deps,
-        PREFIX_REVOKED_PERMITS,
-        &permit,
-        contract_address.into_string(),
-        None,
-    )?;
+        //
+        // complete code here
+        // 
 
     // Permit validated! We can now execute the query.
-    match query {
-        QueryWithPermit::AllInfo {} => {
-            if !permit.check_permission(&RichieRichPermissions::AllInfo) {
-                return Err(StdError::generic_err(format!(
-                    "No permission to query, got permissions {:?}",
-                    permit.params.permissions
-                )));
-            }
+        //
+        // complete code here
+        // 
 
-            query_all_info(deps, deps.api.addr_validate(&account)?)
-        }
-        QueryWithPermit::AmIRichest {  } => {
-            if !permit.check_permission(&RichieRichPermissions::AmIRichest) {
-                return Err(StdError::generic_err(format!(
-                    "No permission to query, got permissions {:?}",
-                    permit.params.permissions
-                )));
-            }
-
-            query_richest(deps, deps.api.addr_validate(&account)?)
-        }
-    }
 }
 
 

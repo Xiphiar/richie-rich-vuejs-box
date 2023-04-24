@@ -69,7 +69,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     to_binary( /* complete code here */ "placeholder")
 }
 
-fn permit_queries(deps: Deps, env: Env, permit: Permit<RichieRichPermissions>, query: QueryWithPermit) -> (/* complete code here */) {
+fn permit_queries(deps: Deps, env: Env, permit: Permit /* add generic */, query: QueryWithPermit) -> (/* complete code here */) {
     // Validate permit content
     let contract_address = env.contract.address;
         //
