@@ -27,17 +27,9 @@ const mnemonics = [
 ]
 
 export const initSecretjsClient = async (accounts: SecretNetworkClient[]) => {
-  for (const mnemonic of mnemonics) {
-    const wallet = new Wallet(mnemonic)
-    let secretjs = new SecretNetworkClient({
-      url: localSecretUrl,
-      chainId: "secretdev-1",
-      wallet: wallet,
-      walletAddress: wallet.address,
-    })
-    accounts.push(secretjs)
-    console.log(`Created client for wallet address: ${secretjs.address}`)
-  } 
+  //
+  // complete code here
+  //
   return accounts
 }
 
@@ -54,7 +46,9 @@ export const handleSubmitNetworth = async (
     contract_address: secretBoxAddress,
     code_hash: secretBoxHash,
     msg: {
-      submit_net_worth: { networth },
+      //
+      // complete code here
+      //
     },
   },
   {
@@ -74,7 +68,9 @@ export const handleSetViewingKey = async (
     contract_address: secretBoxAddress,
     code_hash: secretBoxHash,
     msg: {
-      set_viewing_key: { key },
+      //
+      // complete code here
+      //
     },
   },
   {
@@ -93,16 +89,11 @@ export const handleQueryAllInfo = async (
     contract_address: secretBoxAddress,
     code_hash: secretBoxHash,
     query: { all_info: {
-      addr,
-      key,
+      //
+      // complete code here
+      //
     } },
   })) as AllInfoResult
-
-  // if ('err"' in response) {
-  //   throw new Error(
-  //     `Query failed with the following err: ${JSON.stringify(response)}`
-  //   )
-  // }
 
   console.log("Queried all info with viewing key")
 
@@ -118,16 +109,11 @@ export const handleQueryAmIRichest = async (
     contract_address: secretBoxAddress,
     code_hash: secretBoxHash,
     query: { am_i_richest: {
-      addr,
-      key,
+      //
+      // complete code here
+      //
     } },
   })) as AmIRichestResult
-
-  // if ('err"' in response) {
-  //   throw new Error(
-  //     `Query failed with the following err: ${JSON.stringify(response)}`
-  //   )
-  // }
 
   console.log("Queried am I richest with viewing key")
 
@@ -138,11 +124,10 @@ export async function handleQueryAllInfoWithPermit(
   secretjs: SecretNetworkClient,
   permit: Permit,
 ) {
-  // const permit = await handleGeneratePermit(secretjs, ["all_info"]);
-
   const msg = { with_permit: {
-    permit,
-    query: { all_info: { }}
+    //
+    // complete code here
+    //
   }};
 
   const response = (await secretjs.query.compute.queryContract({
@@ -163,8 +148,9 @@ export async function handleQueryAmIRichestWithPermit(
   // const permit = await handleGeneratePermit(secretjs, ["am_i_richest"]);
 
   const msg = { with_permit: {
-    permit,
-    query: { am_i_richest: { }}
+    //
+    // complete code here
+    //
   }};
 
   const response = (await secretjs.query.compute.queryContract({
@@ -183,15 +169,11 @@ export async function handleGeneratePermit(
   permitName: string,
   permissions: CustomPermission[],
 ): Promise<Permit> {
-  const permit = await account.utils.accessControl.permit.sign(
-    account.address,
-    "secret-4",
-    permitName,
-    [secretBoxAddress],
-    // @ts-ignore
-    permissions, // ["owner"],
-    false,
-  );
+    //
+    // complete code here
+    //
+  // @ts-ignore
+  const permit = "placeholder" as Permit
 
   console.log(`Generated permit for ${account.address}`)
 

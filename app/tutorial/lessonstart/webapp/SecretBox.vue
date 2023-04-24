@@ -203,12 +203,6 @@ async function onQueryAmIRichestWithPermit() {
   contractResponse.query = res
 }
 
-// if not connected to smart contract: ------------
-
-// let submitted = {
-
-// }
-
 
 </script>
 

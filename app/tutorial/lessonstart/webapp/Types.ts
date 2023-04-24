@@ -19,14 +19,6 @@ export type QueryResult = AllInfoResult | AmIRichestResult
 
 export type CustomPermission = "all_info" | "am_i_richest" | ""
 
-// export type Account = {
-//   address: string;
-//   mnemonic: string;
-//   walletAmino: AminoWallet;
-//   walletProto: Wallet;
-//   secretjs: SecretNetworkClient;
-// };
-
 
 // =========================================
 // App UI 
