@@ -73,6 +73,26 @@ launchapp:
 	yarn --cwd ./app/ install && \
 	yarn --cwd ./app/ dev
 
+.PHONY: apply-src-as-solutions
+apply-src-as-solutions:
+	cp ./app/tutorial/solutions/contract/** ./local/solutions/contract
+	cp ./src/** ./app/tutorial/solutions/contract
+
+.PHONY: apply-solutions-on-src
+apply-solutions-on-src:
+	cp ./src/** ./local/solutions/contract
+	cp ./app/tutorial/solutions/contract/** ./src/
+
+.PHONY: apply-src-as-lessonstart
+apply-src-as-lessonstart:
+	cp ./app/tutorial/lessonstart/contract/** ./local/lessonstart/contract
+	cp ./src/** ./app/tutorial/lessonstart/contract
+
+.PHONY: apply-lessonstart-on-src
+apply-lessonstart-on-src:
+	cp ./src/** ./local/lessonstart/contract
+	cp ./app/tutorial/lessonstart/contract/** ./src/
+
 .PHONY: clean
 clean:
 	cargo clean

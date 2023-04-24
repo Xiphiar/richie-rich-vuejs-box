@@ -24,3 +24,6 @@ tests/node_modules/*
 
 # env files
 *.env
+
+# misc
+/local
