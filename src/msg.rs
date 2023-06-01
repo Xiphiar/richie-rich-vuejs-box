@@ -24,25 +24,33 @@ pub enum QueryMsg {
         addr: Addr,
         key: String,
     },
-    //
-    // complete code here
-    // 
+    WithPermit {
+        permit: Permit<RichieRichPermissions>,
+        query: QueryWithPermit,
+    },
 }
 
 impl QueryMsg {
-    pub fn get_validation_params(&self) -> (/* complete code here */) {
-        //
-        // complete code here
-        //
+    pub fn get_validation_params(&self, api: &dyn Api) -> StdResult<(Addr, String)> {
+        match self {
+            Self::AllInfo { addr, key } => {
+                let address = api.addr_validate(addr.as_str())?;
+                Ok((address, key.clone()))
+            }
+            Self::AmIRichest { addr, key } => {
+                let address = api.addr_validate(addr.as_str())?;
+                Ok((address, key.clone()))
+            },
+            Self::WithPermit { .. } => panic!("This query type does not require authentication"),
+        }
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema, Eq, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryWithPermit {
-    //
-    // complete code here
-    //
+    AllInfo {  },
+    AmIRichest {  },
 }
 
 /// We define a custom struct for each query response
@@ -60,7 +68,6 @@ pub enum QueryAnswer {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum RichieRichPermissions {
-    //
-    // complete code here
-    //
+    AllInfo,
+    AmIRichest,
 }

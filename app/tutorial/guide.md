@@ -6,7 +6,7 @@ Welcome to the Richie Rich Box tutorial! In this tutorial, we will explore a sim
 
 We have a viewing key and query permit pathway that complements this box. The pathway provides a more detailed explanation of these concepts, while this box focuses on providing practical experience.
 
-You can work through this Secret box using either gitpod or your local environment. If you prefer to use your local environment, you can follow the “Getting Started” steps [here](tbc) to set everything up.
+You can work through this Secret box using either gitpod or your local environment. If you prefer to use your local environment, you can follow the “Getting Started” steps in the [README of this repo](https://github.com/secretuniversity/richie-rich-vuejs-box/blob/main/README.md) to set everything up.
 
 ## Contract overview
 
@@ -27,10 +27,6 @@ Outside of these authenticated queries, the core contract implementation is deli
 > Let's start with the most naive implementation of all, where two users submit their networth, and are able to revise their inputs any time. Suppose one user (Alice) has submitted her networth, then the other user (Bob) can submit “dummy” inputs starting from 0 SCRT and progressively increment the amount until he sees the result switch from is_richest == False to is_richest == True. This effectively reveals Alice’s exact networth. Notice that Alice can also perform the same attack on Bob, assuming that Bob does not perform the attack first.  
 >
 > This attack cannot be done on the RichieRich contract, as it only allows one input per user. Once it accepts two user inputs, it stops accepting anything else. This prevents someone from entering values arbitrarily as described above. However, this exact attack can still be performed by the second user, by utilizing a side channel. Bob could create many forks of the mainnet and try different networth inputs on each, until he determines Alice’s exact networth. While this attack is more complex and only compromises the first user, it is still relatively trivial for a determined attacker. This vulnerability is also described in the Secret docs’ [description of some vulnerabilities](https://docs.scrt.network/secret-network-documentation/overview-ecosystem-and-technology/techstack/privacy-technology/theoretical-attacks#more-advanced-tx-replay-attacks-search-to-decision-for-millionaire-s-problem).
-
-> **Allowing only one round seems inconvenient. Are there ways to improve UX?**
-> 
-> Of course. If you are interested, you can improve the contract such that after taking two inputs, another round begins. You can even allow multiple rounds to run concurrently. Doing this does not increase or decrease the severity of the vulnerability described above. It is not difficult to implement these; although it requires more lines of code. It is not required for our purposes though, as we can easily instantiate new contracts each time we wish to start a new round.
 
 ## Web application overview
 
@@ -69,8 +65,6 @@ Our contract already implements the execute functions we need. However, the quer
 
 So let's do something about it and start implementing viewing key queries on this contract. 
 
-### msg.rs
-
 Begin by opening the src/msg.rs file, and find the QueryMsg enum.
 
 ```rust
@@ -95,6 +89,8 @@ The above code defines the QueryMsg variants for our two viewing key queries. No
 
 Everything is already done here, so there is nothing further for you to do. The incomplete code is for permits, which we will do later.
 
+### Exercise: implement get_validation_params method
+
 Below, you will find the code that defines a method for QueryMsg:
 
 ```rust
@@ -107,9 +103,8 @@ impl QueryMsg {
 }
 ```
 
-> **Exercise: Complete the code**
->
-> This method should return the address and viewing key for all possible viewing key query variants in QueryMsg. It’s also a good idea to verify that the address is in a valid format, which will require an additional input field.
+
+This method should return the address and viewing key for all possible viewing key query variants in QueryMsg. It’s also a good idea to verify that the address is in a valid format, which will require an additional input field.
 
 <details> <summary> Hint 1:</summary>
 
@@ -151,9 +146,12 @@ To verify that the address is in a valid format, we use `addr_validate` method o
 
 
 
-### contract.rs
+### Exercise: validate and handle viewing key queries
 
-Open the src/contract.rs file. At the query entry point function, you will find these lines of incomplete code:
+Next, open the src/contract.rs file. At the query entry point function, you will find these lines of incomplete code:
+
+Here, we need to first obtain the address and viewing key from the query message. Then, we need to check if the viewing key is valid, and handle the success and error outcomes.
+
 
 ```rust
     let q_response = match msg {
@@ -173,10 +171,6 @@ Open the src/contract.rs file. At the query entry point function, you will find 
     };
     to_binary( /* complete code here */ "placeholder")
 ```
-
-> **Exercise: Complete the code**
->
-> Here, we need to first obtain the address and viewing key from the query message. Then, we need to check if the viewing key is valid, and handle the success and error outcomes.
 
 <details> <summary> Hint 1:</summary>
 
@@ -257,11 +251,9 @@ If you want to understand more on how all these work, we have an in-depth discus
 
 Now, let's implement query permits. 
 
-### msg.rs
+### Exercise: define permit query messages
 
 At this point, the only query messages the contract accepts are the two viewing key queries. So, let's define the permit query messages that our contract can accept.
-
-**Exercise**
 
 Add a new variant to the QueryMsg enum called `WithPermit`. It should accept two fields: `permit` and `query`.
 
@@ -332,7 +324,7 @@ In our solution, RichieRichPermissions defines which of the two queries is allow
 
 An alternative design is to have two variants along the lines of `AnyQuery` and `ResultOnly`. The first permission allows the caller to perform either query, while the second only allows the `am_i_richest` query. 
 
-### contract.rs
+### Exercise: handle permit queries
 
 Now let's look at contract.rs. The first thing to do is to add our new variant to the match arm in the query entry point.
 
@@ -424,9 +416,8 @@ fn permit_queries(deps: Deps, env: Env, permit: Permit<RichieRichPermissions>, q
 
 ## Redeploying contract
 
-Our contract is now complete. Let's make sure it compiles, then redeploy it to our local blockchain.
+Our contract is now complete. Let's make sure it compiles, then redeploy it to our local blockchain. In your second terminal, run the following commands:
 
-In your second terminal, run the following commands:
 ```sh
 # optional first line
 cargo check && make test
@@ -443,23 +434,300 @@ make build
 > The complete contract and front-end app code can be found in the app/solutions folder.
 
 
-The shellscript additionally changes the environment variables (such as SECRET_BOX_ADDRESS) so our other scripts, such as the frontend app, will interact with the new contract.
+The shellscript additionally changes the environment variables, such as SECRET_BOX_ADDRESS. By doing this, our front end will interact with the new contract.
 
-(Optional) You can interact with the contract using secretcli if you want. For example, you can have two users input their networth and perform a viewing key query. 
+**(Optional)** You can interact with the contract using secretcli if you want. For example, you can have two users input their networth and perform a viewing key query. 
 
 ```sh
-docker exec localsecret secretcli tx compute execute $  
-TODO
+# get the new environment variables
+source .env
+
+# execute messages using the secretcli binary in our docker file
+# submit networth for user `a` 
+docker exec localsecret secretcli tx compute execute $SECRET_BOX_ADDRESS '{"submit_net_worth":{"networth":"100"}}' --from a -y
+
+
+# submit networth for user `b` 
+docker exec localsecret secretcli tx compute execute $SECRET_BOX_ADDRESS '{"submit_net_worth":{"networth":"500"}}' --from b -y
+
+
+# set viewing key for user `a`
+docker exec localsecret secretcli tx compute execute $SECRET_BOX_ADDRESS '{"set_viewing_key":{"key":"super_secret_key"}}' --from a -y
+
+# perform viewing key query for user `a`
+USER_A=$(docker exec localsecret secretcli keys show --address a)
+
+docker exec localsecret secretcli q compute query $SECRET_BOX_ADDRESS '{"all_info":{"addr":"'"$USER_A"'", "key":"super_secret_key"}}'
 ```
 
-We know if a caller sends the message `all_info` and `am_i_richest`, the contract will respond properly by first checking the validity of the viewing key, then responding with the private data if the key is valid.
+You should see something like this:
+```bash
+{"AllInfo":{"richest":false,"networth":"100"}}
+```
+
 
 
 ## Revising the frontend
 
+Let's now switch over to the frontend webapp. 
+
+This part of the tutorial will focus on how to use secret.js to:
+- integrate a frontend app with a Secret smart contract 
+- allow users to create and sign permits
+
+In this box, we use Vue.js as our web development framework. However, our focus is on secret.js. The secret.js code should be similar, if not identical, regardless of which web framwork you choose to use. The exercises below don't cover specific Vue.js concepts, but all the source code is available for you to view for you to understand how it all sticks together. You can then apply the same logic to your preferred web framework.
 
 
-## Congratulations
+### Exercise: initialize secret.js client
+
+First, navigate to the app/src/components/SecretBox/ContractApi.ts file. This file contains all the functions related to interacting with our RichieRich smart contract. It is imported by the SecretBox.vue component, and you can see the SecretBox component is used in the App.vue top-level parent component. 
+
+Your task is to complete the code to initialize secret.js Secret Network client. The code here would be similar to what you do in Secret Counter Box, which is an introductory box. SecretNetworkClient is a class that contains account information and useful methods for performing transactions, queries and so on.
+
+
+```ts
+export const initSecretjsClient = async (accounts: SecretNetworkClient[]) => {
+  //
+  // complete code here
+  //
+  return accounts
+}
+```
+
+<details> <summary> Hint 1: </summary>
+
+You can initialize SecretNetworkClient like you would with any class in javascript/typescript:
+
+```ts
+new SecretNetworkClient({ ... })
+```
+
+The values of the fields to initialize it with is imported at the top of the file from the .env file we populated when we ran the create_secret_box.sh script. For example, localSecretUrl takes a value from the environment variables.
+
+```ts
+// Get environment variables from .env
+const localSecretUrl: string = import.meta.env.VITE_LOCALSECRET_LCD
+```
+</details>
+
+### Exercise: define contract api
+
+In the same file (ContractApi.ts), you will see the functions for each message we can send to the contract. For example: 
+
+Complete the code for these functions.
+
+```ts
+export const handleSubmitNetworth = async (
+  secretjs: SecretNetworkClient,
+  networth: string
+) => {
+  const tx = await secretjs.tx.compute.executeContract(
+  {
+    sender: secretjs.address,
+    contract_address: secretBoxAddress,
+    code_hash: secretBoxHash,
+    msg: {
+      //
+      // complete code here
+      //
+    },
+  },
+  {
+    gasLimit: 1_000_000,
+  })
+
+  console.log("Submitted networth")
+}
+```
+
+<details> <summary> Hint 1: </summary>
+
+The message schema should match exactly with our contract. Recall we defined the valid messages in the msg.rs file of our contract. We wrote the variant names in CamelCase in Rust, but they should be in snake_case in typescript. This is because we converted them to snake_case when we serialized them:
+
+```rust
+// we had this macro in our contract to serialize our messages to snake_case
+#[serde(rename_all = "snake_case")]
+```
+
+</details>
+
+<details> <summary> Solution: </summary>
+
+handleSubmitNetworth should have the following code. You need to do the same for the other functions, based on the valid messages we defined in msg.rs.
+
+```ts
+export const handleSubmitNetworth = async (
+  secretjs: SecretNetworkClient,
+  networth: string
+) => {
+  const tx = await secretjs.tx.compute.executeContract(
+  {
+    sender: secretjs.address,
+    contract_address: secretBoxAddress,
+    code_hash: secretBoxHash,
+    msg: {
+      submit_net_worth: { networth },
+    },
+  },
+  {
+    gasLimit: 1_000_000,
+  })
+
+  console.log("Submitted networth")
+}
+```
+</details>
+
+
+### Exercise: create permit
+
+Remember that permits are signed off-chain. Which means that it is critical for us to learn how to create a frontend to sign permits. The ContractApi.ts file also includes the function required to create and sign permits.
+
+Navigate to the bottom of the file and complete the code to generate permits:
+
+```ts
+export async function handleGeneratePermit(
+  account: SecretNetworkClient,
+  permitName: string,
+  permissions: CustomPermission[],
+): Promise<Permit> {
+    //
+    // complete code here
+    //
+  // @ts-ignore
+  const permit = "placeholder" as Permit
+
+  console.log(`Generated permit for ${account.address}`)
+
+  return permit;
+}
+
+```
+
+
+<details> <summary> Hint 1: </summary>
+
+SecretNetworkClient has a method to sign permits: 
+
+```ts
+SecretNetworkClient.utils.accessControl.permit.sign(
+```
+
+Secret.js defines the `sign` function this way:
+
+```ts
+  sign(
+    owner: string,
+    chainId: string,
+    permitName: string,
+    allowedContracts: string[],
+    permissions: Permission[],
+    keplr: boolean = true,
+  ): Promise<Permit> {
+    this._checkSigner();
+
+    return newPermit(
+      //@ts-ignore
+      this.signer,
+      owner,
+      chainId,
+      permitName,
+      allowedContracts,
+      permissions,
+      keplr,
+    );
+  }
+```
+</details>
+
+<details> <summary> Hint 2: </summary>
+
+We need to use RichieRich's custom permissions for this permit. Recall the custom permissions were defined in the contract as:
+
+```rust
+pub enum RichieRichPermissions {
+    AllInfo,
+    AmIRichest,
+}
+```
+
+We also defined the same custom permission in our SecretBox component's Types.ts file:
+
+```ts
+export type CustomPermission = "all_info" | "am_i_richest" | ""
+```
+
+CustomPermission type is already in the function input signature.
+
+</details>
+
+
+<details> <summary> Solution: </summary>
+
+```ts
+export async function handleGeneratePermit(
+  account: SecretNetworkClient,
+  permitName: string,
+  permissions: CustomPermission[],
+): Promise<Permit> {
+  const permit = await account.utils.accessControl.permit.sign(
+    account.address,
+    "secret-4",
+    permitName,
+    [secretBoxAddress],
+    // @ts-ignore
+    permissions, // ["owner"],
+    false,
+  );
+
+  console.log(`Generated permit for ${account.address}`)
+
+  return permit;
+}
+
+```
+
+</details>
+
+## Using the front-end app
+
+- At this point your front end app should look like this: ![screenshot](./illustrations/richierich-app-screenshot.png)
+
+The app is designed to help developers understand how viewing keys and permits work by interacting with a graphical user interface (GUI), rather than being a streamlined app for end-users to play with authenticated queries. The GUI is divided into two sections:
+- Account-level messages
+- Query messages
+
+Account-level messages are for execute messages (on-chain) and permit generation (off-chain). There are four sub-sections, each specific to one of the four accounts we created in our `SecretNetworkClient` initialization.
+
+To submit net worth, enter a number in the first box and click the “Submit Networth” button. To set a viewing key, type any string as the viewing key and click “Set viewing key”. You will need to remember this key for later use.
+
+To generate a permit, enter any string as the permit name and enter the permission which should be either `all_info` or `am_i_richest`. Recall that these are our two custom permissions that we defined. Generating permits is done by the front-end app with no interaction with the contract. If successful, you will see the newly generated permit added to the list of permits towards the bottom of the app. We index each permit generated with an integer; the first permit you generate should be numbered `1`. This is for convenience when you later perform query permits. Instead of typing the entire permit JSON, you only need to specify the index and the app pulls the correct permit to send with the query.
+
+The contract only accepts one round. Once two players have submitted their networth, the contract can’t accept any more networth inputs. If you want to play another round, you can redeploy a new contract by running either script below:
+
+```sh
+# run the shellscript that deploys a new contract and sets the environment variables to point to this new contract 
+./scripts/create_secret_box.sh
+
+# does the exact same thing, but using the Makefile script we've defined
+make deploybox
+``` 
+
+
+Queries are for performing viewing key or permit queries and viewing the results. These are not account-specific, as contracts cannot verify the caller for queries securely (otherwise there may not be a need for viewing keys in the first place). The query section represents “any” party who wishes to send a query message.
+
+To perform a viewing key query, enter one of the four public addresses in the first field (e.g., `secret1ap26qrlp8mcq2pg6r47w43l0y8zkqm8a450s03`) and the viewing key that you created earlier for that specific account. When you click one of the buttons “VK Query: All Info” or “VK Query: Am I Richest”, you will see the result of your query appear at the box at the bottom of the app. Any viewing key will work for both query messages.
+
+To perform a permit query, enter the index of the permit you created (e.g., `1` or `2`) and click either "Permit Query" button. If the permit has the correct permission for the query type, you will see the result at the bottom box. If the permission is wrong, there will be an error. As you can see, standard implementations for permits allow more fine-grained access control. Note that you also don’t need to enter the address of the account you wish to query because the permit itself already contains the public address of the signer.
+
+
+> **Is it possible to improve the user experience by allowing more than one round?**
+> Yes, it is possible. If you are interested, you can improve the contract such that after taking two inputs, another round begins. You can even allow multiple rounds to run concurrently. Doing this does not increase or decrease the severity of the vulnerability described above. It is not difficult to implement these changes; although it requires more lines of code. It is not required for our purposes though, as we can easily instantiate new contracts each time we wish to start a new round.
+
+> **Additional exercise: revoking permits**
+>
+> Notice that we do not have a revoke permit functionality in this Secret Box. A bonus exercise is to implement this functionality in this contract. We describe the steps on how to do this in our viewing key and permit pathway.
+
 
 Congratulations on completing this tutorial!
 
@@ -467,9 +735,9 @@ We at [Secret University](https://scrt.university) hope you've not only enjoyed 
 
 ## Further Reading
 
-- [Viewing keys and permit pathway](TBC TODO)
+- Our [viewing keys and permit pathway](https://scrt.university/pathways/33/implementing-viewing-keys-and-permits) discusses authenticated queries in detail. 
 
-- [Rust Book](https://doc.rust-lang.org/book/) or the [Rustlings](https://github.com/rust-lang/rustlings) course.
+- If you're new to the Rust programming language, check out the [Rust Book](https://doc.rust-lang.org/book/) or the [Rustlings](https://github.com/rust-lang/rustlings) course.
 
 - Another fun way to learn Rust that's interactive is [Tour of Rust](https://tourofrust.com).
 
