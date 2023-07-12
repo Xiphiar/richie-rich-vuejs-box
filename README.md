@@ -3,8 +3,6 @@
 _(Brought to you by [Secret University](https://scrt.university))_
 
 
-[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/secretuniversity/richie-rich-vuejs-box)
-
 The RichieRich Box offers a hands-on experience in implementing viewing keys and query permits on [Secret Network](https://scrt.network). It consists of a frontend (Vue + Vite + Typescript) and a Secret contract (Rust + Secret CosmWasm). The RichieRich contract is a basic implementation of the Millionaire's problem as the core contract, and implements viewing keys and permits to demonstrate authenticated queries. It includes an exercise of writing custom permissions for permits.
 
 This is not an entry-level box. If you are unfamiliar with the basics of instantiating a secret contract, and handling execute and query calls, we suggest doing the [Secret Counter box](https://github.com/secretuniversity/secret-counter-vuejs-box).
@@ -12,24 +10,15 @@ This is not an entry-level box. If you are unfamiliar with the basics of instant
 
 ## Getting Started
 
-To get started with this `Secret Box` you can either open it in Gitpod, or set up your local environment. The Gitpod workspace will save you time if you haven't previously set up your local environment to develop on Secret Network, as a lot of the heavy lifting, such as pulling the `LocalSecret` docker image, installing `Rust`, `cargo` and other tools, and deploying the Secret contract are completed for you in a pre-build task. 
-
-Once you're environment is ready to go, this [guide](/app/tutorial/guide.md) should appear in your front-end app. This walks you through the steps to complete the Secret Box!
-
-Gitpod also starts the `LocalSecret` blockchain and launches the frontend using _Vite_.
-
-### Gitpod Workspace
-
-Use the "Open in Gitpod" button below to launch this `Secret Box`.
-
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/secretuniversity/richie-rich-vuejs-box)
-
+We recommend working through this `Secret Box` in your local environment. Gitpod is not supported for this particular `Secret Box`, although we have a gitpod.yml file which is meant to set up your environment on Gitpod, if you wish to try doing this on Gitpod. 
 
 ### Local Environment Setup
 
-If you prefer to get started with this Secret Box locally, use the [Setting Up Your Environment](/docs/setting-up-your-environment.md) guide to install the required infrastructure. The guide will also walk you through launching the `LocalSecret` blockchain, building, testing and deploying a contract. And lastly, launching the frontend. 
+Use the [Setting Up Your Environment](/docs/setting-up-your-environment.md) guide to install the required infrastructure, if you haven't already. The guide will also walk you through launching the `LocalSecret` blockchain, building, testing and deploying a contract. And lastly, launching the frontend. 
 
 Note that the guide is written with Secret Counter in mind, which is our introductory box. If you are unfamiliar with using your local environment, we recommend starting with Secret Counter first. You should then be able to follow the same steps for any Secret contract, including Secret Boxes.
+
+After you follow the steps in the link above (on this repo, rather than the Secret Counter repo), this [guide](/app/tutorial/guide.md) should appear in your front-end app. This walks you through the steps to complete the Secret Box!
 
 ## Commands & Usage
 
@@ -74,20 +63,6 @@ From within a local development environment, you can query and post transactions
 Checkout the http://localhost:1317/swagger/ UI which makes it easy to interact with the node. Or use 
 http://localhost:1317/openapi/ to view the queries, transactions and parameters that are available.
  
-### Gitpod Workspace
-
-When using the Gitpod workspace, prepend the port number to the Gitpod URL. 
-
-For example, if the workspace is at
-`https://secretunive-secretcount-2qzt9b9me7a.ws-us77.gitpod.io`, then you can connect to the LCD service at
-`https://1317-secretunive-secretcount-2qzt9b9me7a.ws-us77.gitpod.io`.
-
-To use the Swagger or OpenAPI interaces append `/swagger/` or `/openapi/` to the Gitpod URL:
-
-`https://1317-secretunive-secretcount-2qzt9b9me7a.ws-us77.gitpod.io/swagger/`
-
-![](docs/swagger-interface.png)
-
 # Resources
 - [Secret Network](https://docs.scrt.network) - official Secret Network documentation and guides
 - [Gitpod](https://www.gitpod.io/docs) - Gitpod documentation
